@@ -18,20 +18,58 @@ from util.mail_content_parser import MailContent, parse_subject, parse_from_info
 @dataclass
 class EachMail:
     msg_id: str  # 邮件编号
-    subject: str  #
+    subject: str  # 邮件标题
     from_name: str
     from_addr: str
     content: MailContent
 
 
-class ReceiveEmail:
+class EmailService:
 
-    def __init__(self, server: str, address: str, password: str, imap_port: int = 993, smtp_port: int = 465) -> None:
+    def __init__(self, server: str, address: str, password: str, imap_port: int = 993, smtp_port: int = 465, type_flag: str='imap') -> None:
         self.server = server
         self.imap_port = imap_port
         self.smtp_port = smtp_port
         self.address = address
         self.password = password
+        self.type_flag = type_flag
+    
+    def connect(self, protocol: str = "imap") -> Union[imaplib.IMAP4_SSL, smtplib.SMTP_SSL]:
+        """
+        通用邮件客户端连接方法
+        
+        :param protocol: 协议类型，可选 "imap" 或 "smtp"
+        :return: 返回对应的邮件客户端对象
+        :raises: 连接失败时抛出相应异常
+        """
+        if protocol.lower() == "imap":
+            client = imaplib.IMAP4_SSL(self.server, self.imap_port)
+            login_method = client.login
+            error_type = imaplib.IMAP4.error
+            protocol_name = "IMAP接收"
+            port = self.imap_port
+        elif protocol.lower() == "smtp":
+            client = smtplib.SMTP_SSL(self.server, self.smtp_port)
+            login_method = client.login
+            error_type = smtplib.SMTPException
+            protocol_name = "SMTP发送"
+            port = self.smtp_port
+        else:
+            raise ValueError(f"不支持的协议类型: {protocol}，请使用 'imap' 或 'smtp'")
+
+        try:
+            login_method(self.address, self.password)
+        except error_type as e:
+            error_msg = (
+                f"服务器{self.server}:端口{port}, "
+                f"邮箱地址{self.address}:密码{self.password}，"
+                f"{protocol_name}登录失败: {e}"
+            )
+            print(error_msg)
+            raise e
+        
+        return client
+
 
     def rcv_connect(self) -> imaplib.IMAP4_SSL:
         mail_client = imaplib.IMAP4_SSL(self.server, self.imap_port)
@@ -62,7 +100,7 @@ class ReceiveEmail:
             mail_client.select(folder)  # 选择收件箱
         except imaplib.IMAP4.abort as e:
             mail_client = self.rcv_connect()
-            mail_client.select(folder)
+            mail_clientt.select(folder)
         result_list = []
         # 搜索所有邮件（可选条件：'ALL'/'UNSEEN'/'SUBJECT "关键词"'）
         status, messages = mail_client.search(None, 'Since', since_date.strftime('%d-%b-%Y'))
