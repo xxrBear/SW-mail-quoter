@@ -155,9 +155,6 @@ class ReceiveEmail:
 
 
 if __name__ == "__main__":
-    # 创建附件保存目录
-    # if not os.path.exists('attachments'):
-    #     os.makedirs('attachments')
 
     from dotenv import load_dotenv
     import os
