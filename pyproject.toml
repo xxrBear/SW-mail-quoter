@@ -8,4 +8,8 @@ dependencies = [
     "lxml>=5.4.0",
     "pandas>=2.0.3",
     "python-dotenv>=1.0.1",
+    "xlwings==0.31.10",
 ]
+
+[dependency-groups]
+dev = []
