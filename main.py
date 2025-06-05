@@ -1,23 +1,22 @@
-import imaplib
-import smtplib
 import email
+import imaplib
+import os
+import smtplib
 from dataclasses import dataclass
 from datetime import date
 from email import policy
-
-import os
 from email.mime.message import MIMEMessage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.parser import BytesParser
 from email.utils import make_msgid
-from typing import List, Optional, Callable, Union
+from typing import Callable, List, Optional, Union
 
 from util.mail_content_parser import (
     MailContent,
-    parse_subject,
-    parse_from_info,
     parse_alternative_content,
+    parse_from_info,
+    parse_subject,
 )
 
 
@@ -150,17 +149,21 @@ class EmailService:
         rcv_client.close()
         raw_email = msg_data[0][1]
         original_msg = BytesParser(policy=policy.default).parsebytes(raw_email)
+
         # original = email.message_from_string(raw_email.decode('utf-8'))
         # 开始回复
+
         reply_msg = MIMEMultipart("mixed")
         reply_msg["Message-ID"] = make_msgid()
         reply_msg["In-Reply-To"] = original_msg["Message-ID"]
         reply_msg["References"] = original_msg["Message-ID"]
+
         # 构建邮件头
         reply_msg["From"] = self.address
         reply_msg["To"] = original_msg["From"]
         reply_msg["Subject"] = f"Re: {original_msg['Subject']}"
         reply_msg["CC"] = gen_cc(original_msg, [self.address])
+
         # 构建回复邮件体
         reply_body = MIMEMultipart("related")
         reply_msg.attach(reply_body)
@@ -202,13 +205,13 @@ if __name__ == "__main__":
     EMAIL_USER_NAME = os.getenv("EMAIL_USER_NAME")
     EMAIL_USER_PASS = os.getenv("EMAIL_USER_PASS")
 
+    # 参数检查
     if not all((EMAIL_SMTP_SERVER, EMAIL_USER_NAME, EMAIL_USER_PASS)):
         raise RuntimeError(
             f"缺少必须参数 EMAIL_USER_PASS {EMAIL_USER_PASS} EMAIL_USER_NAME {EMAIL_USER_NAME} EMAIL_USER_SERVER {EMAIL_SMTP_SERVER}"
         )
 
-    folder = "INBOX"
-
+    # 实例化邮箱客户端
     mail_client = EmailService(
         server=EMAIL_SMTP_SERVER, address=EMAIL_USER_NAME, password=EMAIL_USER_PASS
     )
@@ -218,7 +221,7 @@ if __name__ == "__main__":
     #         return True
     #     return False
 
-    result_list = mail_client.read_mail(folder=folder, since_date=date(2025, 4, 21))
+    result_list = mail_client.read_mail(folder="INBOX", since_date=date(2025, 4, 21))
     last_mail: EachMail = result_list[-2]
 
     import pandas as pd
@@ -232,6 +235,8 @@ if __name__ == "__main__":
     # for column_name, column_values in df.iterrows():
     # print(column_values.values)
 
+    import re
+
     import xlwings as xw
 
     # 启动 Excel 应用
@@ -239,11 +244,33 @@ if __name__ == "__main__":
 
     wb = app.books.open("./test.xlsm")
 
-    # 尝试常规关闭
+    # 写入 Excel
     try:
         wb = app.books.open("./test.xlsm")
-        sheet = wb.sheets[0]
-        sheet.range("A18").value = "hello world3"
+        sheet = wb.sheets["看涨阶梯"]
+
+        # 将读出来的邮件内容写入 Excel
+        for _, column in df.iterrows():
+            header, value = column
+            if header == "挂钩标的合约":
+                pattern = r"[（(](.*?)[）)]"
+                value2 = re.findall(pattern, value)
+                sheet.range("C3").value = value2[0].replace(".", "").upper()
+            elif header == "产品启动日":
+                sheet.range("C4").value = value
+            elif header == "交割日（双方资金清算日）":
+                sheet.range("C5").value = value
+            elif header == "最低收益率（年化）":
+                sheet.range("C9").value = value
+            elif header == "中间收益率（年化）":
+                sheet.range("C10").value = value
+            elif header == "最高收益率（年化）":
+                sheet.range("C11").value = value
+            elif header == "行权价格2（高）":
+                sheet.range("C22").value = value.replace("*", "")
+            else:
+                pass
+
         wb.save()
     except Exception as e:
         print("操作 Excel 失败：", e)
