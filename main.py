@@ -17,6 +17,7 @@ from util.mail_content_parser import (
     parse_alternative_content,
     parse_from_info,
     parse_subject,
+    gen_cc,
 )
 
 
@@ -37,14 +38,12 @@ class EmailService:
         password: str,
         imap_port: int = 993,
         smtp_port: int = 465,
-        protocol: str = "imap",
     ) -> None:
         self.server = server
         self.imap_port = imap_port
         self.smtp_port = smtp_port
         self.address = address
         self.password = password
-        self.protocol = protocol
 
     def connect(
         self, protocol: str = "imap"
@@ -56,12 +55,12 @@ class EmailService:
         :return: 返回对应的邮件客户端对象
         :raises: 连接失败时抛出相应异常
         """
-        if self.protocol.lower() == "imap":
+        if protocol.lower() == "imap":
             client = imaplib.IMAP4_SSL(self.server, self.imap_port)
             error_type = imaplib.IMAP4.error
             protocol_name = "IMAP接收"
             port = self.imap_port
-        elif self.protocol.lower() == "smtp":
+        elif protocol.lower() == "smtp":
             client = smtplib.SMTP_SSL(self.server, self.smtp_port)
             error_type = smtplib.SMTPException
             protocol_name = "SMTP发送"
@@ -88,13 +87,13 @@ class EmailService:
         since_date: date = date.today(),
         filter_func: Optional[Callable] = None,
     ) -> List[EachMail]:
-        mail_client = self.connect(protocol="smtp")
+        mail_client = self.connect(protocol="imap")
 
         mail_client.select(folder)  # 选择收件箱
 
         result_list = []
 
-        # 搜索所有邮件（可选条件：'ALL'/'UNSEEN'/'SUBJECT "关键词"'）
+        # 搜索所有邮件（可选条件：ALL UNSEEN SUBJECT "关键字"）
         status, messages = mail_client.search(
             None, "Since", since_date.strftime("%d-%b-%Y")
         )
@@ -120,7 +119,7 @@ class EmailService:
             # 解码邮件头信息
             subject = parse_subject(msg)
             from_name, from_addr = parse_from_info(msg)
-            if filter_func is not None and not filter_func(
+            if filter_func and not filter_func(
                 from_addr, subject
             ):  # 筛选邮件，不满足直接跳过
                 continue
@@ -137,16 +136,15 @@ class EmailService:
         reply_content: Union[str, MIMEMultipart],
         folder: str = "INBOX",
     ) -> None:
-        rcv_client = self.rcv_connect()
-        try:
-            rcv_client.select(folder)  # 选择收件箱
-        except imaplib.IMAP4.abort as e:
-            rcv_client = self.rcv_connect()
-            rcv_client.select(folder)
-        status, msg_data = rcv_client.fetch(msg_id, "(RFC822)")
+        # 邮件发送客户端
+        mail_client = self.connect(protocol="imap")
+        mail_client.select(folder)
+        status, msg_data = mail_client.fetch(msg_id, "(RFC822)")
+        # print(status, msg_data)
+
         if status != "OK":
             raise ValueError(f"MsgID={msg_id} is not in folder={folder}!")
-        rcv_client.close()
+        mail_client.close()
         raw_email = msg_data[0][1]
         original_msg = BytesParser(policy=policy.default).parsebytes(raw_email)
 
@@ -161,18 +159,22 @@ class EmailService:
         # 构建邮件头
         reply_msg["From"] = self.address
         reply_msg["To"] = original_msg["From"]
+        # reply_msg["To"] = "17855370672@163.com"
+
         reply_msg["Subject"] = f"Re: {original_msg['Subject']}"
+        # print(gen_cc(original_msg, [self.address]))
         reply_msg["CC"] = gen_cc(original_msg, [self.address])
 
         # 构建回复邮件体
         reply_body = MIMEMultipart("related")
         reply_msg.attach(reply_body)
         reply_info = MIMEMultipart("alternative")
+
         if isinstance(reply_content, MIMEMultipart):
             reply_info.attach(reply_content)
         else:
             html_part = MIMEText(
-                f"<p>{reply_content}</p><br></b><hr/><b>以上由程序回复，以下是原始邮件：</b><hr/></b><br>",
+                f"<p>{reply_content.html}</p><br></b><hr/><b>以上由程序回复，以下是原始邮件：</b><hr/></b><br>",
                 "html",
                 "utf-8",
             )
@@ -185,7 +187,9 @@ class EmailService:
         reply_body.attach(MIMEMessage(original_msg))
 
         # 开始回复
-        snd_client = self.snd_connect()
+        snd_client = self.connect("smtp")
+        # print(reply_msg)
+
         try:
             snd_client.send_message(reply_msg)
         except smtplib.SMTPException as e:
@@ -222,18 +226,16 @@ if __name__ == "__main__":
     #     return False
 
     result_list = mail_client.read_mail(folder="INBOX", since_date=date(2025, 4, 21))
+    # print(result_list)
     last_mail: EachMail = result_list[-2]
 
     import pandas as pd
 
     df: pd.DataFrame = pd.read_html(last_mail.content.html, index_col=0)[0]
+    # print(last_mail.content.html)
+    # print(last_mail.content.plain)
+
     df.reset_index(inplace=True)
-    # df.iloc[16, 1] = 110
-    # print(df.values[2])
-    # print(df.values.flatten())
-    # print(df.stack().to_list())
-    # for column_name, column_values in df.iterrows():
-    # print(column_values.values)
 
     import re
 
@@ -271,9 +273,41 @@ if __name__ == "__main__":
             else:
                 pass
 
+        k1 = sheet.range("C23").value
+
         wb.save()
     except Exception as e:
         print("操作 Excel 失败：", e)
     finally:
         wb.close()
         app.quit()
+
+    # 操作邮件 HTML 模块
+    print(k1)
+    # print(last_mail.content.html)
+    # mail_client.reply_mail(last_mail.msg_id, last_mail.content)
+
+    from bs4 import BeautifulSoup
+
+    html_content = last_mail.content.html
+    soup = BeautifulSoup(html_content, "html.parser")
+    table = soup.find("table")
+
+    data = {}
+    # 查找所有表格行 <tr>
+    rows = soup.select("table tr")
+
+    # 遍历每一行，查找“名义本金上限”这一项并修改值
+    for row in rows:
+        tds = row.find_all("td", recursive=False)
+        if len(tds) == 2:
+            key = tds[0].get_text(strip=True)
+            if key == "行权价格1（低）":
+                # 修改第二个单元格的内容
+                new_value = k1
+                tds[1].find("p").find("span").string = "{:.2%}".format(k1)
+                print(f"已修改 {key} 为：{new_value}")
+
+    modified_html = str(soup.prettify())
+    last_mail.content.html = modified_html
+    mail_client.reply_mail(last_mail.msg_id, last_mail.content)
