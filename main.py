@@ -14,10 +14,10 @@ from typing import Callable, List, Optional, Union
 
 from util.mail_content_parser import (
     MailContent,
+    gen_cc,
     parse_alternative_content,
     parse_from_info,
     parse_subject,
-    gen_cc,
 )
 
 
