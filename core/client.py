@@ -1,4 +1,5 @@
 import email
+from email.message import Message
 import imaplib
 import smtplib
 from datetime import date
@@ -82,7 +83,7 @@ class EmailClient:
 
         result_list = []
 
-        # 搜索所有邮件（可选条件：ALL UNSEEN SUBJECT "关键字"）
+        # 根据条件搜索邮件（可选条件：ALL、UNSEEN、SUBJECT "关键字"）
         status, messages = mail_client.search(
             None, "Since", since_date.strftime("%d-%b-%Y")
         )
@@ -115,45 +116,27 @@ class EmailClient:
 
             # 文本内容
             content = parse_multipart_content(msg)
-            result_list.append(EachMail(msg_id, subject, from_name, from_addr, content))
+            result_list.append(
+                EachMail(msg_id, subject, from_name, from_addr, content, msg)
+            )
         mail_client.close()
         return result_list
 
     def reply_mail(
         self,
-        msg_id: str,
-        reply_content: Union[str, MIMEMultipart],
-        folder: str = "INBOX",
+        last_email: EachMail,
     ) -> None:
         """回复邮件"""
 
-        original_msg = self._build_original_message(msg_id, folder)
-
-        reply_mime = self._build_reply_mime(original_msg, reply_content)
+        reply_mime = self._build_reply_mime(last_email)
 
         self._send_reply_mail(reply_mime)
-        print(f"已回复邮件: {original_msg['Subject']}")
+        print(f"已回复邮件: {last_email.message['Subject']}")
 
-    def _build_original_message(self, msg_id: str, folder) -> MIMEMessage:
-        """根据 msg_id 获取原始邮件内容"""
-
-        # 邮件发送客户端
-        mail_client = self.connect(protocol="imap")
-        mail_client.select(folder)
-        status, msg_data = mail_client.fetch(msg_id, "(RFC822)")
-        # print(status, msg_data)
-
-        if status != "OK":
-            raise ValueError(f"MsgID={msg_id} is not in folder={folder}!")
-        mail_client.close()
-        raw_email = msg_data[0][1]
-        original_msg = BytesParser(policy=policy.default).parsebytes(raw_email)
-        return original_msg
-
-    def _build_reply_mime(
-        self, original_msg: MIMEMessage, reply_content: Union[str, MIMEMultipart]
-    ) -> MIMEMultipart:
+    def _build_reply_mime(self, last_email: EachMail) -> MIMEMultipart:
         """构建回复邮件的 MIMEMultipart 对象"""
+
+        original_msg = last_email.message
 
         reply_mime = MIMEMultipart("mixed")
         reply_mime["Message-ID"] = make_msgid()
@@ -174,11 +157,11 @@ class EmailClient:
         reply_mime.attach(reply_body)
         reply_info = MIMEMultipart("alternative")
 
-        if isinstance(reply_content, MIMEMultipart):
-            reply_info.attach(reply_content)
+        if isinstance(last_email.content, MIMEMultipart):
+            reply_info.attach(last_email.content)
         else:
             html_part = MIMEText(
-                f"<p>{reply_content.html}</p><br></b><hr/><b>以上由程序回复，以下是原始邮件：</b><hr/></b><br>",
+                f"<p>{last_email.content.html}</p><br></b><hr/><b>以上由程序回复，以下是原始邮件：</b><hr/></b><br>",
                 "html",
                 "utf-8",
             )

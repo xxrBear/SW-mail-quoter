@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from email.message import Message
 from typing import List, Optional, Union
 
 
@@ -17,4 +18,4 @@ class EachMail:
     from_name: str
     from_addr: str
     content: MailContent
-    # message: Optional[Union[str, bytes]] = None  # 原始邮件内容
+    message: Message  # 原始邮件内容

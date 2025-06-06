@@ -129,7 +129,7 @@ def handle_mail_html(
 
     modified_html = str(soup.prettify())
     last_mail.content.html = modified_html
-    mail_client.reply_mail(last_mail.msg_id, last_mail.content)
+    mail_client.reply_mail(last_mail)
 
 
 if __name__ == "__main__":
