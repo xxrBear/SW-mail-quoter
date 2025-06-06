@@ -1,7 +1,8 @@
-from pydantic import BaseModel
 from datetime import date
-from typing import Optional, Union, List
 from enum import Enum
+from typing import List, Optional, Union
+
+from pydantic import BaseModel
 
 
 class EmailModel(BaseModel):
@@ -15,4 +16,8 @@ class EmailModel(BaseModel):
     password: Optional[str] = ""
 
     def __repr__(self):
-        return str("{}-{}-{}-{}".format(self.to_receiver, self.cc_receiver, self.subject, self.text))
+        return str(
+            "{}-{}-{}-{}".format(
+                self.to_receiver, self.cc_receiver, self.subject, self.text
+            )
+        )
