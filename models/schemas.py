@@ -17,3 +17,4 @@ class EachMail:
     from_name: str
     from_addr: str
     content: MailContent
+    # message: Optional[Union[str, bytes]] = None  # 原始邮件内容

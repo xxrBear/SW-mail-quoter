@@ -1,7 +1,10 @@
 import os
+import re
 from datetime import date
 
 import pandas as pd
+import xlwings as xw
+from bs4 import BeautifulSoup
 
 from core.client import EmailClient
 from models.schemas import EachMail
@@ -35,11 +38,10 @@ def parse_mail_content(mail_client: EmailClient):
     # 解析邮件内容
     result_list = mail_client.read_mail(folder="INBOX", since_date=date(2025, 4, 21))
     # print(result_list)
+
     last_mail: EachMail = result_list[-2]
 
     df: pd.DataFrame = pd.read_html(last_mail.content.html, index_col=0)[0]
-    # print(last_mail.content.html)
-    # print(last_mail.content.plain)
 
     df.reset_index(inplace=True)
     return df, last_mail
@@ -52,9 +54,6 @@ def operate_excel(df: pd.DataFrame) -> float:
     :return: k1: 从 Excel 中获取的值
     """
     # 这里可以添加对 DataFrame 的处理逻辑
-    import re
-
-    import xlwings as xw
 
     # 启动 Excel 应用
     app = xw.App(visible=False, add_book=False)
@@ -110,7 +109,6 @@ def handle_mail_html(
     :param k1: 从 Excel 中获取的值
     :return: None
     """
-    from bs4 import BeautifulSoup
 
     html_content = last_mail.content.html
     soup = BeautifulSoup(html_content, "html.parser")

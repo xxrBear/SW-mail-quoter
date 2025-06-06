@@ -1,10 +1,10 @@
 import base64
 from email.header import decode_header
 from email.message import Message
+from email.utils import parseaddr
 from typing import List, Tuple
 
 from models.schemas import MailContent
-from email.utils import parseaddr
 
 
 def parse_multipart_content(msg: Message) -> MailContent:

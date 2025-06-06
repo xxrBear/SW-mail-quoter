@@ -10,13 +10,13 @@ from email.parser import BytesParser
 from email.utils import make_msgid
 from typing import Callable, List, Optional, Union
 
-from models.schemas import EachMail
-from util.parser import (
+from core.parser import (
     gen_cc,
     parse_from_info,
     parse_multipart_content,
     parse_subject,
 )
+from models.schemas import EachMail
 
 
 class EmailClient:
@@ -125,6 +125,18 @@ class EmailClient:
         reply_content: Union[str, MIMEMultipart],
         folder: str = "INBOX",
     ) -> None:
+        """回复邮件"""
+
+        original_msg = self._build_original_message(msg_id, folder)
+
+        reply_mime = self._build_reply_mime(original_msg, reply_content)
+
+        self._send_reply_mail(reply_mime)
+        print(f"已回复邮件: {original_msg['Subject']}")
+
+    def _build_original_message(self, msg_id: str, folder) -> MIMEMessage:
+        """根据 msg_id 获取原始邮件内容"""
+
         # 邮件发送客户端
         mail_client = self.connect(protocol="imap")
         mail_client.select(folder)
@@ -136,27 +148,30 @@ class EmailClient:
         mail_client.close()
         raw_email = msg_data[0][1]
         original_msg = BytesParser(policy=policy.default).parsebytes(raw_email)
+        return original_msg
 
-        # original = email.message_from_string(raw_email.decode('utf-8'))
-        # 开始回复
+    def _build_reply_mime(
+        self, original_msg: MIMEMessage, reply_content: Union[str, MIMEMultipart]
+    ) -> MIMEMultipart:
+        """构建回复邮件的 MIMEMultipart 对象"""
 
-        reply_msg = MIMEMultipart("mixed")
-        reply_msg["Message-ID"] = make_msgid()
-        reply_msg["In-Reply-To"] = original_msg["Message-ID"]
-        reply_msg["References"] = original_msg["Message-ID"]
+        reply_mime = MIMEMultipart("mixed")
+        reply_mime["Message-ID"] = make_msgid()
+        reply_mime["In-Reply-To"] = original_msg["Message-ID"]
+        reply_mime["References"] = original_msg["Message-ID"]
 
         # 构建邮件头
-        reply_msg["From"] = self.address
+        reply_mime["From"] = self.address
         # reply_msg["To"] = original_msg["From"]
-        reply_msg["To"] = "17855370672@163.com"
+        reply_mime["To"] = "17855370672@163.com"
 
-        reply_msg["Subject"] = f"Re: {original_msg['Subject']}"
+        reply_mime["Subject"] = f"Re: {original_msg['Subject']}"
         # print(gen_cc(original_msg, [self.address]))
-        reply_msg["CC"] = gen_cc(original_msg, [self.address])
+        reply_mime["CC"] = gen_cc(original_msg, [self.address])
 
         # 构建回复邮件体
         reply_body = MIMEMultipart("related")
-        reply_msg.attach(reply_body)
+        reply_mime.attach(reply_body)
         reply_info = MIMEMultipart("alternative")
 
         if isinstance(reply_content, MIMEMultipart):
@@ -174,19 +189,18 @@ class EmailClient:
         reply_body.attach(reply_orig_message)
 
         reply_body.attach(MIMEMessage(original_msg))
+        return reply_mime
 
-        # 开始回复
-        snd_client = self.connect("smtp")
-        # print(reply_msg)
+    def _send_reply_mail(self, reply_mime: MIMEMultipart) -> None:
+        """发送回复邮件"""
+
+        # SMTP客户端连接
+        smtp_client = self.connect("smtp")
 
         try:
-            snd_client.send_message(reply_msg)
-        except smtplib.SMTPException as e:
-            print(f"SMTP错误 [{e}]")
-        except AttributeError as e:
-            print(f"参数类型错误: {str(e)}")
-            raise e
-        except Exception as e:
-            print(f"未知错误: {str(e)}")
-        else:
-            snd_client.close()
+            smtp_client.send_message(reply_mime)
+        except (smtplib.SMTPException, AttributeError, Exception) as e:
+            print(f"邮件回复失败: {type(e).__name__}: {e}")
+            raise
+        finally:
+            smtp_client.quit()
