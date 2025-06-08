@@ -2,10 +2,24 @@ import re
 
 import pandas as pd
 import xlwings as xw
+from bs4 import BeautifulSoup
+
+from core.client import EmailClient
+from models.schemas import EachMail
 
 
 class ProcessorStrategy:
     def operate_excel(self):
+        raise NotImplementedError()
+
+    def handle_mail_html(self, mail_client, last_mail, df, k1):
+        """
+        处理邮件 HTML 内容
+        :param mail_client: 邮箱客户端实例
+        :param last_mail: 最后处理的邮件对象
+        :param df: 解析后的 DataFrame
+        :param k1: 从 Excel 中获取的值
+        """
         raise NotImplementedError()
 
 
@@ -58,6 +72,39 @@ class CustomerAProcessor(ProcessorStrategy):
             app.quit()
 
         return k1
+
+    def handle_mail_html(
+        self, mail_client: EmailClient, last_mail: EachMail, df: pd.DataFrame, k1: float
+    ):
+        """
+        处理邮件 HTML 内容
+        :param mail_client: 邮箱客户端实例
+        :param last_mail: 最后一封邮件实例
+        :param k1: 从 Excel 中获取的值
+        :return: None
+        """
+
+        html_content = last_mail.content.html
+        soup = BeautifulSoup(html_content, "html.parser")
+
+        # 查找所有表格行 <tr>
+        rows = soup.select("table tr")
+
+        # 遍历每一行，查找“行权价格1（低）”这一项并修改值
+        for row in rows:
+            tds = row.find_all("td", recursive=False)
+            if len(tds) == 2:
+                key = tds[0].get_text(strip=True)
+                if key == "行权价格1（低）":
+                    # 修改第二个单元格的内容
+                    new_value = k1
+                    tds[1].find("p").find("span").string = "{:.2%}".format(k1)
+                    print(f"已修改 {key} 为：{new_value}")
+
+        modified_html = str(soup.prettify())
+        last_mail.content.html = modified_html
+
+        return last_mail
 
 
 class CustomerBProcessor(ProcessorStrategy):

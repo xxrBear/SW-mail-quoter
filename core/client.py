@@ -1,7 +1,7 @@
-from collections import defaultdict
 import email
 import imaplib
 import smtplib
+from collections import defaultdict
 from datetime import date
 from email.mime.message import MIMEMessage
 from email.mime.multipart import MIMEMultipart
@@ -108,6 +108,11 @@ class EmailClient:
             subject = parse_subject(msg)
             from_name, from_addr = parse_from_info(msg)
 
+            # def filter_mail(from_addr: str, subject: str) -> bool:  # 需要定义一个函数来筛选要处理的邮件
+            #     if '衍生品交易' in subject and 'liunaiwei' in from_addr:
+            #         return True
+            #     return False
+
             # 筛选邮件
             if filter_func and not filter_func(from_addr, subject):
                 continue
@@ -129,7 +134,7 @@ class EmailClient:
         reply_mime = self._build_reply_mime(last_email)
 
         self._send_reply_mail(reply_mime)
-        print(f"已回复邮件: {last_email.message['Subject']}")
+        print(f"已回复邮件: {last_email.subject}")
 
     def _build_reply_mime(self, last_email: EachMail) -> MIMEMultipart:
         """构建回复邮件的 MIMEMultipart 对象"""
