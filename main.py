@@ -1,102 +1,59 @@
 import os
-import re
 from datetime import date
 
 import pandas as pd
-import xlwings as xw
 from bs4 import BeautifulSoup
 
 from core.client import EmailClient
 from models.schemas import EachMail
+from processor.base import get_processor
 
 
 def create_mail_client():
-    # 获取环境变量
-    EMAIL_SMTP_SERVER = os.getenv("EMAIL_SMTP_SERVER")
-    EMAIL_USER_NAME = os.getenv("EMAIL_USER_NAME")
-    EMAIL_USER_PASS = os.getenv("EMAIL_USER_PASS")
+    """从环境变量创建并返回邮件客户端实例"""
+    required_env_vars = {
+        "EMAIL_SMTP_SERVER": os.getenv("EMAIL_SMTP_SERVER"),
+        "EMAIL_USER_NAME": os.getenv("EMAIL_USER_NAME"),
+        "EMAIL_USER_PASS": os.getenv("EMAIL_USER_PASS"),
+    }
 
-    # 参数检查
-    if not all((EMAIL_SMTP_SERVER, EMAIL_USER_NAME, EMAIL_USER_PASS)):
-        raise RuntimeError(
-            f"缺少必须参数 EMAIL_USER_PASS {EMAIL_USER_PASS} EMAIL_USER_NAME {EMAIL_USER_NAME} EMAIL_USER_SERVER {EMAIL_SMTP_SERVER}"
-        )
+    missing_vars = [key for key, value in required_env_vars.items() if not value]
+    if missing_vars:
+        raise RuntimeError(f"缺少必须的环境变量: {', '.join(missing_vars)}")
 
-    # 实例化邮箱客户端
-    mail_client = EmailClient(
-        server=EMAIL_SMTP_SERVER, address=EMAIL_USER_NAME, password=EMAIL_USER_PASS
+    return EmailClient(
+        server=required_env_vars.get("EMAIL_SMTP_SERVER"),
+        address=required_env_vars.get("EMAIL_USER_NAME"),
+        password=required_env_vars.get("EMAIL_USER_PASS"),
     )
-    return mail_client
 
 
 def parse_mail_content(mail_client: EmailClient):
     """
-    解析邮件内容
+    解析所有符合条件的邮件内容
     :param mail_client: 邮箱客户端实例
     :return: DataFrame
     """
     # 解析邮件内容
-    result_list = mail_client.read_mail(folder="INBOX", since_date=date(2025, 4, 21))
+    result_dict = mail_client.read_mail(folder="INBOX", since_date=date(2025, 4, 21))
     # print(result_list)
 
-    last_mail: EachMail = result_list[-2]
+    # last_mail = result_list[-2]
 
-    df: pd.DataFrame = pd.read_html(last_mail.content.html, index_col=0)[0]
+    for eamil_addr, result_list in result_dict.items():
+        processor = get_processor(eamil_addr)
+        if not processor:
+            print(f"未找到处理器，邮箱地址: {eamil_addr}")
+            continue
 
-    df.reset_index(inplace=True)
-    return df, last_mail
+        last_mail = result_list[-1]
+        print(f"处理邮件: {last_mail.subject} 来自: {eamil_addr}")
 
+        df = pd.read_html(last_mail.content.html, index_col=0)[0]
 
-def operate_excel(df: pd.DataFrame) -> float:
-    """
-    操作 Excel 文件
-    :param df: 解析后的 DataFrame
-    :return: k1: 从 Excel 中获取的值
-    """
-    # 这里可以添加对 DataFrame 的处理逻辑
-
-    # 启动 Excel 应用
-    app = xw.App(visible=False, add_book=False)
-
-    wb = app.books.open("./test.xlsm")
-
-    # 写入 Excel
-    try:
-        wb = app.books.open("./test.xlsm")
-        sheet = wb.sheets["看涨阶梯"]
-
-        # 将读出来的邮件内容写入 Excel
-        for _, column in df.iterrows():
-            header, value = column
-            if header == "挂钩标的合约":
-                pattern = r"[（(](.*?)[）)]"
-                value2 = re.findall(pattern, value)
-                sheet.range("C3").value = value2[0].replace(".", "").upper()
-            elif header == "产品启动日":
-                sheet.range("C4").value = value
-            elif header == "交割日（双方资金清算日）":
-                sheet.range("C5").value = value
-            elif header == "最低收益率（年化）":
-                sheet.range("C9").value = value
-            elif header == "中间收益率（年化）":
-                sheet.range("C10").value = value
-            elif header == "最高收益率（年化）":
-                sheet.range("C11").value = value
-            elif header == "行权价格2（高）":
-                sheet.range("C22").value = value.replace("*", "")
-            else:
-                pass
-
-        k1 = sheet.range("C23").value
-
-        wb.save()
-    except Exception as e:
-        print("操作 Excel 失败：", e)
-    finally:
-        wb.close()
-        app.quit()
-
-    return k1
+        df.reset_index(inplace=True)
+        k1 = processor.operate_excel(df)
+        handle_mail_html(mail_client, last_mail, df, k1)
 
 
 def handle_mail_html(
@@ -140,12 +97,4 @@ if __name__ == "__main__":
 
     mail_client = create_mail_client()
 
-    df, last_email = parse_mail_content(mail_client)
-    k1 = operate_excel(df)
-
-    handle_mail_html(mail_client, last_email, df, k1)
-
-    # 操作邮件 HTML 模块
-    # print(k1)
-    # print(last_mail.content.html)
-    # mail_client.reply_mail(last_mail.msg_id, last_mail.content)
+    parse_mail_content(mail_client)

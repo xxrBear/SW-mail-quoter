@@ -1,13 +1,11 @@
+from collections import defaultdict
 import email
-from email.message import Message
 import imaplib
 import smtplib
 from datetime import date
-from email import policy
 from email.mime.message import MIMEMessage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.parser import BytesParser
 from email.utils import make_msgid
 from typing import Callable, List, Optional, Union
 
@@ -81,7 +79,7 @@ class EmailClient:
 
         mail_client.select(folder)  # 选择收件箱
 
-        result_list = []
+        result_dict = defaultdict(list)
 
         # 根据条件搜索邮件（可选条件：ALL、UNSEEN、SUBJECT "关键字"）
         status, messages = mail_client.search(
@@ -89,7 +87,7 @@ class EmailClient:
         )
         if status != "OK":
             print("未找到邮件")
-            return result_list
+            return result_dict
 
         # 解析邮件ID列表
         message_ids = messages[0].split()
@@ -109,18 +107,18 @@ class EmailClient:
             # 解码邮件头信息
             subject = parse_subject(msg)
             from_name, from_addr = parse_from_info(msg)
-            if filter_func and not filter_func(
-                from_addr, subject
-            ):  # 筛选邮件，不满足直接跳过
+
+            # 筛选邮件
+            if filter_func and not filter_func(from_addr, subject):
                 continue
 
             # 文本内容
             content = parse_multipart_content(msg)
-            result_list.append(
+            result_dict[from_addr].append(
                 EachMail(msg_id, subject, from_name, from_addr, content, msg)
             )
         mail_client.close()
-        return result_list
+        return result_dict
 
     def reply_mail(
         self,
