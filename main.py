@@ -1,17 +1,27 @@
 from datetime import date
 
 import pandas as pd
+import xlwings as xw
 
 from core.client import create_mail_client
-from processor.base import get_processor
+from processor.base import choose_sheet_by_subject, get_processor
 
 
-def process_and_reply_mails():
-    """处理并回复邮件
+def process_excel_and_reply_mails():
+    """处理 Excel 并回复邮件
     :param mail_client: 邮箱客户端实例
     :return: None
     """
 
+    # 启动 Excel 应用
+    app = xw.App(visible=False, add_book=False)
+    try:
+        wb = app.books.open("./test.xlsm")
+    except Exception as e:
+        print("打开 Excel 文件失败:", e)
+        app.quit()
+
+    # 处理邮件并回复
     mail_client = create_mail_client()
     result_dict = mail_client.read_mail(folder="INBOX", since_date=date(2025, 4, 21))
 
@@ -28,13 +38,16 @@ def process_and_reply_mails():
             # print(df) # DataFrame
             df.reset_index(inplace=True)
 
-            k1 = processor.operate_excel(df)
-            processed_mail = processor.process_mail_html(mail_client, mail, df, k1)
+            sheet_name = choose_sheet_by_subject(mail.subject)
+            k1 = processor.process_excel(df, wb, sheet_name)
+            processed_mail = processor.process_mail_html(mail, df, k1)
 
             # 回复邮件
             mail_client.reply_mail(processed_mail)
             break
 
+    app.quit()
+
 
 if __name__ == "__main__":
-    process_and_reply_mails()
+    process_excel_and_reply_mails()

@@ -19,21 +19,16 @@ class ProcessorStrategy(ABC):
 
 
 class CustomerAProcessor(ProcessorStrategy):
-    def process_excel(self, df: pd.DataFrame) -> float:
+    def process_excel(self, df: pd.DataFrame, wb: xw.Book, sheet_name: str) -> float:
         """
         操作 Excel 文件
         :param df: 解析后的 DataFrame
         :return: k1: 从 Excel 中获取的值
         """
-        # 这里可以添加对 DataFrame 的处理逻辑
-
-        # 启动 Excel 应用
-        app = xw.App(visible=False, add_book=False)
 
         # 写入 Excel
         try:
-            wb = app.books.open("./test.xlsm")
-            sheet = wb.sheets["看涨阶梯"]
+            sheet = wb.sheets[sheet_name]
 
             # 将读出来的邮件内容写入 Excel
             for _, column in df.iterrows():
@@ -64,7 +59,6 @@ class CustomerAProcessor(ProcessorStrategy):
             print("操作 Excel 失败：", e)
         finally:
             wb.close()
-            app.quit()
 
         return k1
 
@@ -112,3 +106,17 @@ def get_processor(email: str) -> ProcessorStrategy:
     :return: ProcessorStrategy 策略
     """
     return processor_map.get(email)
+
+
+def choose_sheet_by_subject(subject: str) -> str:
+    """
+    根据邮件主题选择对应的 Excel 工作表
+    :param subject: 邮件主题
+    :return: 工作表名称
+    """
+    if "看涨阶梯" in subject:
+        return "看涨阶梯"
+    elif "看跌阶梯" in subject:
+        return "看跌阶梯"
+    else:
+        raise ValueError(f"未找到对应的工作表，主题: {subject}")
