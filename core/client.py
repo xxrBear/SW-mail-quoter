@@ -1,5 +1,6 @@
 import email
 import imaplib
+import os
 import smtplib
 from collections import defaultdict
 from datetime import date
@@ -72,9 +73,16 @@ class EmailClient:
     def read_mail(
         self,
         folder: str = "INBOX",
-        since_date: date = date.today(),  # noqa: F821
+        since_date: date = date.today(),
         filter_func: Optional[Callable] = None,
     ) -> List[EachMail]:
+        """读取所有邮件，并整理成字典
+
+        :param folder: 邮件文件夹，默认为 "INBOX"
+        :param since_date: 读取指定日期之后的邮件，默认为今天
+        :param filter_func: 可选的过滤函数
+        :return: 返回一个字典，键为发件人地址，值为 EachMail 对象列表
+        """
         mail_client = self.connect(protocol="imap")
 
         mail_client.select(folder)  # 选择收件箱
@@ -89,29 +97,23 @@ class EmailClient:
             print("未找到邮件")
             return result_dict
 
-        # 解析邮件ID列表
+        # 邮件ID列表
         message_ids = messages[0].split()
 
-        # 遍历处理每封邮件
         for msg_id in message_ids:
-            # 获取邮件原始数据
+            # 邮件原始数据
             status, msg_data = mail_client.fetch(msg_id, "(RFC822)")
             if status != "OK":
                 continue
 
-            # 解析邮件内容
+            # 邮件内容
             raw_email = msg_data[0][1]
             msg = email.message_from_bytes(raw_email)
             # print(msg)
 
-            # 解码邮件头信息
+            # 邮件标题和发件人信息
             subject = parse_subject(msg)
             from_name, from_addr = parse_from_info(msg)
-
-            # def filter_mail(from_addr: str, subject: str) -> bool:  # 需要定义一个函数来筛选要处理的邮件
-            #     if '衍生品交易' in subject and 'liunaiwei' in from_addr:
-            #         return True
-            #     return False
 
             # 筛选邮件
             if filter_func and not filter_func(from_addr, subject):
@@ -190,3 +192,22 @@ class EmailClient:
             raise
         finally:
             smtp_client.quit()
+
+
+def create_mail_client():
+    """从环境变量创建并返回邮件客户端实例"""
+    required_env_vars = {
+        "EMAIL_SMTP_SERVER": os.getenv("EMAIL_SMTP_SERVER"),
+        "EMAIL_USER_NAME": os.getenv("EMAIL_USER_NAME"),
+        "EMAIL_USER_PASS": os.getenv("EMAIL_USER_PASS"),
+    }
+
+    missing_vars = [key for key, value in required_env_vars.items() if not value]
+    if missing_vars:
+        raise RuntimeError(f"缺少必须的环境变量: {', '.join(missing_vars)}")
+
+    return EmailClient(
+        server=required_env_vars.get("EMAIL_SMTP_SERVER"),
+        address=required_env_vars.get("EMAIL_USER_NAME"),
+        password=required_env_vars.get("EMAIL_USER_PASS"),
+    )

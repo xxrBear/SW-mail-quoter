@@ -1,30 +1,25 @@
 import re
+from abc import ABC, abstractmethod
 
 import pandas as pd
 import xlwings as xw
 from bs4 import BeautifulSoup
 
-from core.client import EmailClient
 from models.schemas import EachMail
 
 
-class ProcessorStrategy:
-    def operate_excel(self):
+class ProcessorStrategy(ABC):
+    @abstractmethod
+    def process_excel(self):
         raise NotImplementedError()
 
-    def handle_mail_html(self, mail_client, last_mail, df, k1):
-        """
-        处理邮件 HTML 内容
-        :param mail_client: 邮箱客户端实例
-        :param last_mail: 最后处理的邮件对象
-        :param df: 解析后的 DataFrame
-        :param k1: 从 Excel 中获取的值
-        """
+    @abstractmethod
+    def process_mail_html(self):
         raise NotImplementedError()
 
 
 class CustomerAProcessor(ProcessorStrategy):
-    def operate_excel(self, df: pd.DataFrame) -> float:
+    def process_excel(self, df: pd.DataFrame) -> float:
         """
         操作 Excel 文件
         :param df: 解析后的 DataFrame
@@ -73,9 +68,7 @@ class CustomerAProcessor(ProcessorStrategy):
 
         return k1
 
-    def handle_mail_html(
-        self, mail_client: EmailClient, last_mail: EachMail, df: pd.DataFrame, k1: float
-    ):
+    def process_mail_html(self, mail: EachMail, df: pd.DataFrame, k1: float):
         """
         处理邮件 HTML 内容
         :param mail_client: 邮箱客户端实例
@@ -84,7 +77,7 @@ class CustomerAProcessor(ProcessorStrategy):
         :return: None
         """
 
-        html_content = last_mail.content.html
+        html_content = mail.content.html
         soup = BeautifulSoup(html_content, "html.parser")
 
         # 查找所有表格行 <tr>
@@ -102,13 +95,9 @@ class CustomerAProcessor(ProcessorStrategy):
                     print(f"已修改 {key} 为：{new_value}")
 
         modified_html = str(soup.prettify())
-        last_mail.content.html = modified_html
+        mail.content.html = modified_html
 
-        return last_mail
-
-
-class CustomerBProcessor(ProcessorStrategy):
-    def operate_excel(selfl): ...
+        return mail
 
 
 processor_map = {
@@ -120,6 +109,6 @@ def get_processor(email: str) -> ProcessorStrategy:
     """
     根据邮箱地址获取对应的处理器策略
     :param email: 邮箱地址
-    :return: ProcessorStrategy 实例
+    :return: ProcessorStrategy 策略
     """
     return processor_map.get(email)
