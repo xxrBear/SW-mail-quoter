@@ -4,7 +4,7 @@ import pandas as pd
 import xlwings as xw
 
 from core.client import create_mail_client
-from processor.base import choose_sheet_by_subject, get_processor
+from processor.registry import choose_sheet_by_subject, get_processor
 
 
 def process_excel_and_reply_mails():
