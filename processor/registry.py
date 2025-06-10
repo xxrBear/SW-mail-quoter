@@ -18,6 +18,7 @@ def get_processor(email: str) -> ProcessorStrategy:
 subject_sheet_map = {
     "看涨阶梯": "看涨阶梯",
     "看跌阶梯": "看跌阶梯",
+    "二元看涨": "二元看涨",
 }
 
 

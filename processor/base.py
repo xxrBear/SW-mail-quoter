@@ -11,3 +11,7 @@ class ProcessorStrategy(ABC):
     @abstractmethod
     def process_mail_html(self):
         pass
+
+    @abstractmethod
+    def get_except_excel_mapping(self):
+        pass

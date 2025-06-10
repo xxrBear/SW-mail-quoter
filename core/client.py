@@ -8,7 +8,7 @@ from email.mime.message import MIMEMessage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import make_msgid
-from typing import Callable, List, Optional, Union
+from typing import List, Union
 
 from core.parser import (
     gen_cc,
@@ -74,13 +74,11 @@ class EmailClient:
         self,
         folder: str = "INBOX",
         since_date: date = date.today(),
-        filter_func: Optional[Callable] = None,
     ) -> List[EachMail]:
         """读取所有邮件，并整理成字典
 
         :param folder: 邮件文件夹，默认为 "INBOX"
         :param since_date: 读取指定日期之后的邮件，默认为今天
-        :param filter_func: 可选的过滤函数
         :return: 返回一个字典，键为发件人地址，值为 EachMail 对象列表
         """
         mail_client = self.connect(protocol="imap")
@@ -116,8 +114,11 @@ class EmailClient:
             from_name, from_addr = parse_from_info(msg)
 
             # 筛选邮件
-            if filter_func and not filter_func(from_addr, subject):
+            if "衍生品交易" not in subject:
                 continue
+
+            # if "看涨阶梯" not in subject:
+            # continue
 
             # 文本内容
             content = parse_multipart_content(msg)
@@ -150,11 +151,10 @@ class EmailClient:
 
         # 构建邮件头
         reply_mime["From"] = self.address
-        # reply_msg["To"] = original_msg["From"]
+        # reply_mime["To"] = original_msg["From"]
         reply_mime["To"] = "17855370672@163.com"
 
         reply_mime["Subject"] = f"Re: {original_msg['Subject']}"
-        # print(gen_cc(original_msg, [self.address]))
         reply_mime["CC"] = gen_cc(original_msg, [self.address])
 
         # 构建回复邮件体
