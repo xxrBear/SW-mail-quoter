@@ -40,7 +40,7 @@ def process_excel_and_reply_mails():
 
             sheet_name = choose_sheet_by_subject(mail.subject)
             k1 = processor.process_excel(df, wb, sheet_name)
-            processed_mail = processor.process_mail_html(mail, df, k1)
+            processed_mail = processor.process_mail_html(mail, k1)
 
             # 回复邮件
             mail_client.reply_mail(processed_mail)

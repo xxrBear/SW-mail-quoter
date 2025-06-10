@@ -11,14 +11,27 @@ from models.schemas import EachMail
 class ProcessorStrategy(ABC):
     @abstractmethod
     def process_excel(self):
-        raise NotImplementedError()
+        pass
 
     @abstractmethod
     def process_mail_html(self):
-        raise NotImplementedError()
+        pass
 
 
 class CustomerAProcessor(ProcessorStrategy):
+    excel_mapping = {
+        "挂钩标的合约": (
+            "C3",
+            lambda v: re.findall(r"[（(](.*?)[）)]", v)[0].replace(".", "").upper(),
+        ),
+        "产品启动日": ("C4", str),
+        "交割日（双方资金清算日）": ("C5", str),
+        "最低收益率（年化）": ("C9", str),
+        "中间收益率（年化）": ("C10", str),
+        "最高收益率（年化）": ("C11", str),
+        "行权价格2（高）": ("C22", lambda v: v.replace("*", "")),
+    }
+
     def process_excel(self, df: pd.DataFrame, wb: xw.Book, sheet_name: str) -> float:
         """
         操作 Excel 文件
@@ -26,31 +39,15 @@ class CustomerAProcessor(ProcessorStrategy):
         :return: k1: 从 Excel 中获取的值
         """
 
-        # 写入 Excel
         try:
             sheet = wb.sheets[sheet_name]
 
-            # 将读出来的邮件内容写入 Excel
+            # 将指定邮件内容写入 Excel
             for _, column in df.iterrows():
                 header, value = column
-                if header == "挂钩标的合约":
-                    pattern = r"[（(](.*?)[）)]"
-                    value2 = re.findall(pattern, value)
-                    sheet.range("C3").value = value2[0].replace(".", "").upper()
-                elif header == "产品启动日":
-                    sheet.range("C4").value = value
-                elif header == "交割日（双方资金清算日）":
-                    sheet.range("C5").value = value
-                elif header == "最低收益率（年化）":
-                    sheet.range("C9").value = value
-                elif header == "中间收益率（年化）":
-                    sheet.range("C10").value = value
-                elif header == "最高收益率（年化）":
-                    sheet.range("C11").value = value
-                elif header == "行权价格2（高）":
-                    sheet.range("C22").value = value.replace("*", "")
-                else:
-                    pass
+                if header in self.excel_mapping:
+                    cell, transform = self.excel_mapping[header]
+                    sheet.range(cell).value = transform(value)
 
             k1 = sheet.range("C23").value
 
@@ -62,35 +59,27 @@ class CustomerAProcessor(ProcessorStrategy):
 
         return k1
 
-    def process_mail_html(self, mail: EachMail, df: pd.DataFrame, k1: float):
+    def process_mail_html(self, mail: EachMail, k1: float):
         """
         处理邮件 HTML 内容
-        :param mail_client: 邮箱客户端实例
-        :param last_mail: 最后一封邮件实例
+        :param mail: 邮件对象
         :param k1: 从 Excel 中获取的值
-        :return: None
+        :return: 修改后的 mail
         """
 
-        html_content = mail.content.html
-        soup = BeautifulSoup(html_content, "html.parser")
+        soup = BeautifulSoup(mail.content.html, "html.parser")
 
         # 查找所有表格行 <tr>
-        rows = soup.select("table tr")
-
-        # 遍历每一行，查找“行权价格1（低）”这一项并修改值
-        for row in rows:
+        for row in soup.select("table tr"):
             tds = row.find_all("td", recursive=False)
-            if len(tds) == 2:
-                key = tds[0].get_text(strip=True)
-                if key == "行权价格1（低）":
-                    # 修改第二个单元格的内容
-                    new_value = k1
-                    tds[1].find("p").find("span").string = "{:.2%}".format(k1)
-                    print(f"已修改 {key} 为：{new_value}")
+            if len(tds) == 2 and tds[0].get_text(strip=True) == "行权价格1（低）":
+                span = tds[1].select_one("p > span")
+                if span:
+                    span.string = "{:.2%}".format(k1)
+                    print(f"已修改 行权价格1（低） 为：{k1}")
+                break  # 找到后即可退出循环
 
-        modified_html = str(soup.prettify())
-        mail.content.html = modified_html
-
+        mail.content.html = str(soup.prettify())
         return mail
 
 
@@ -108,15 +97,14 @@ def get_processor(email: str) -> ProcessorStrategy:
     return processor_map.get(email)
 
 
+subject_sheet_map = {
+    "看涨阶梯": "看涨阶梯",
+    "看跌阶梯": "看跌阶梯",
+}
+
+
 def choose_sheet_by_subject(subject: str) -> str:
-    """
-    根据邮件主题选择对应的 Excel 工作表
-    :param subject: 邮件主题
-    :return: 工作表名称
-    """
-    if "看涨阶梯" in subject:
-        return "看涨阶梯"
-    elif "看跌阶梯" in subject:
-        return "看跌阶梯"
-    else:
-        raise ValueError(f"未找到对应的工作表，主题: {subject}")
+    for keyword, sheet_name in subject_sheet_map.items():
+        if keyword in subject:
+            return sheet_name
+    raise ValueError(f"未找到对应的工作表，主题: {subject}")
