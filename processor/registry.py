@@ -8,9 +8,9 @@ processor_map = {
 
 def get_processor(email: str) -> ProcessorStrategy:
     """
-    根据邮箱地址获取对应的处理器策略
+    根据邮箱地址获取对应的处理策略类实例
     :param email: 邮箱地址
-    :return: ProcessorStrategy 策略
+    :return: ProcessorStrategy 子类实例
     """
     return processor_map.get(email)
 
@@ -23,6 +23,10 @@ subject_sheet_map = {
 
 
 def choose_sheet_by_subject(subject: str) -> str:
+    """根据邮件主题选择对应的工作表名称
+    :param subject: 邮件主题
+    :return: 对应的工作表名称
+    """
     for keyword, sheet_name in subject_sheet_map.items():
         if keyword in subject:
             return sheet_name

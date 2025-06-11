@@ -10,8 +10,9 @@ from processor.mapping import CBG_BINARRY_CALL_TUPLE, CBG_BULL_LADDER_TUPLE
 class CustomerCBGProcessor(ProcessorStrategy):
     def process_excel(self, df: pd.DataFrame, wb: xw.Book, sheet_name: str) -> float:
         """
-        操作 Excel 文件
+        操作 Excel 文件，获取指定表格中的值
         :param df: 解析后的 DataFrame
+        :param wb: xlwings 工作簿对象
         :return: k1: 从 Excel 中获取的值
         """
 
@@ -38,7 +39,7 @@ class CustomerCBGProcessor(ProcessorStrategy):
     def process_mail_html(self, soup: BeautifulSoup, mail: EachMail, k1: float):
         """
         处理邮件 HTML 内容
-        :param mail: 邮件对象
+        :param soup: BeautifulSoup 对象，解析后的邮件 HTML 内容
         :param k1: 从 Excel 中获取的值
         :return: 修改后的 mail
         """
@@ -67,8 +68,8 @@ class CustomerCBGProcessor(ProcessorStrategy):
 
     def is_already_quoted(self, soup: BeautifulSoup) -> bool:
         """
-        检查指定标签是否已完成报价
-        :param tag: 标签名称
+        分析邮件HTML，判断是否已完成报价
+        :param soup: BeautifulSoup 对象，解析后的邮件 HTML 内容
         :return: 如果已完成报价返回 True，否则返回 False
         """
         for label, td in self.iter_label_rows(soup):

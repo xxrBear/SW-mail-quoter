@@ -49,7 +49,6 @@ def process_excel_and_reply_mails():
 
             # 回复邮件
             mail_client.reply_mail(processed_mail)
-            # break
 
     wb.close()
     app.quit()
