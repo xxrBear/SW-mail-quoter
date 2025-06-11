@@ -2,6 +2,7 @@ from datetime import date
 
 import pandas as pd
 import xlwings as xw
+from bs4 import BeautifulSoup
 
 from core.client import create_mail_client
 from processor.registry import choose_sheet_by_subject, get_processor
@@ -34,13 +35,17 @@ def process_excel_and_reply_mails():
         for mail in result_list:
             print(f"处理邮件: {mail.subject} 来自: {eamil_addr}")
 
+            soup = BeautifulSoup(mail.content.html, "html.parser")
+            if processor.is_already_quoted(soup):
+                print(f"当前邮件已完成报价，跳过邮件: {mail.subject}")
+                continue
+
             df = pd.read_html(mail.content.html, index_col=0)[0]
-            # print(df) # DataFrame
             df.reset_index(inplace=True)
 
             sheet_name = choose_sheet_by_subject(mail.subject)
             k1 = processor.process_excel(df, wb, sheet_name)
-            processed_mail = processor.process_mail_html(mail, k1)
+            processed_mail = processor.process_mail_html(soup, mail, k1)
 
             # 回复邮件
             mail_client.reply_mail(processed_mail)

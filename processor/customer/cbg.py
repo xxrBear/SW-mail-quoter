@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 
 from models.schemas import EachMail
 from processor.base import ProcessorStrategy
-from processor.mapping import CBG_BULL_LADDER_TUPLE, CBG_BINARRY_CALL_TUPLE
+from processor.mapping import CBG_BINARRY_CALL_TUPLE, CBG_BULL_LADDER_TUPLE
 
 
 class CustomerCBGProcessor(ProcessorStrategy):
@@ -35,29 +35,20 @@ class CustomerCBGProcessor(ProcessorStrategy):
 
         return k1
 
-    def process_mail_html(self, mail: EachMail, k1: float):
+    def process_mail_html(self, soup: BeautifulSoup, mail: EachMail, k1: float):
         """
         处理邮件 HTML 内容
         :param mail: 邮件对象
         :param k1: 从 Excel 中获取的值
         :return: 修改后的 mail
         """
-
-        soup = BeautifulSoup(mail.content.html, "html.parser")
-        # 查找所有表格行
-        for row in soup.select("table tr"):
-            tds = row.find_all("td", recursive=False)
-            if len(tds) != 2:
-                continue
-
-            label = tds[0].get_text(strip=True)
+        for label, td in self.iter_label_rows(soup):
             if label in ("行权价格1（低）", "行权价格"):
-                span = tds[1].select_one("p > span")
+                span = td.select_one("p > span")
                 if span:
                     span.string = f"{k1:.2%}"
                     print(f"已修改 {label} 为：{k1:.2%}")
                 break
-
         mail.content.html = str(soup)
         return mail
 
@@ -73,3 +64,22 @@ class CustomerCBGProcessor(ProcessorStrategy):
             return CBG_BINARRY_CALL_TUPLE
         else:
             raise ValueError(f"未找到对应的工作表对应操作，工作表: {sheet_name}")
+
+    def is_already_quoted(self, soup: BeautifulSoup) -> bool:
+        """
+        检查指定标签是否已完成报价
+        :param tag: 标签名称
+        :return: 如果已完成报价返回 True，否则返回 False
+        """
+        for label, td in self.iter_label_rows(soup):
+            if label in ("行权价格1（低）", "行权价格"):
+                return bool(td.get_text(strip=True))
+        return False
+
+    def iter_label_rows(self, soup: BeautifulSoup):
+        """返回需要处理的标签行"""
+        for row in soup.select("table tr"):
+            tds = row.find_all("td", recursive=False)
+            if len(tds) == 2:
+                label = tds[0].get_text(strip=True)
+                yield label, tds[1]

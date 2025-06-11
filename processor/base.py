@@ -15,3 +15,7 @@ class ProcessorStrategy(ABC):
     @abstractmethod
     def get_except_excel_mapping(self):
         pass
+
+    @abstractmethod
+    def is_already_quoted(self, tag: str) -> bool:
+        pass
