@@ -2,9 +2,32 @@ import base64
 from email.header import decode_header
 from email.message import Message
 from email.utils import parseaddr
-from typing import List, Tuple
+from typing import List, Optional, Tuple
+
+import pandas as pd
 
 from models.schemas import MailContent
+
+
+def parse_html_to_dict(html: str) -> Optional[dict]:
+    """
+    解析邮件 HTML 的 table 内容，返回字典格式的数据
+    :param html: 邮件 HTML 内容
+    :return: 解析后的数据列表
+    """
+    try:
+        df = pd.read_html(html)[0]  # 默认读第一张表
+        df = df[[0, 1]]  # 确保只保留前两列
+        df.dropna(subset=[0], inplace=True)  # 丢掉 key 是 NaN 的行
+
+        result = {
+            str(k).strip(): (None if pd.isna(v) else str(v).strip())
+            for k, v in zip(df[0], df[1])
+        }
+        return result
+    except Exception as e:
+        print(f"解析失败: {e}")
+        return None
 
 
 def parse_multipart_content(msg: Message) -> MailContent:

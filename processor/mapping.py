@@ -4,6 +4,9 @@ import re
 # 广发银行
 # -----------------------------------------------------------------
 
+# 指定报价字段
+CBG_QUOTE_FIELD_MAPPING = {"看涨阶梯": "行权价格1（低）", "二元看涨": "行权价格"}
+
 
 # 看涨阶梯对应 excel 表格的映射关系
 CBG_BULL_LADDER_TUPLE = (
@@ -37,3 +40,9 @@ CBG_BINARRY_CALL_TUPLE = (
         "期权费 （年化）": ("C8", str),
     },
 )
+
+# 不同表格名称对应不同处理样式的规则
+CBG_EXCEL_PROCESSING_RULES_MAPPING = {
+    "看涨阶梯": CBG_BULL_LADDER_TUPLE,
+    "二元看涨": CBG_BINARRY_CALL_TUPLE,
+}

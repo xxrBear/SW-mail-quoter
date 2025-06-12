@@ -1,30 +1,34 @@
-import pandas as pd
 import xlwings as xw
 from bs4 import BeautifulSoup
 
 from models.schemas import EachMail
 from processor.base import ProcessorStrategy
-from processor.mapping import CBG_BINARRY_CALL_TUPLE, CBG_BULL_LADDER_TUPLE
+from processor.mapping import (
+    CBG_EXCEL_PROCESSING_RULES_MAPPING,
+    CBG_QUOTE_FIELD_MAPPING,
+)
 
 
 class CustomerCBGProcessor(ProcessorStrategy):
-    def process_excel(self, df: pd.DataFrame, wb: xw.Book, sheet_name: str) -> float:
+    def process_excel(self, mail: EachMail, wb: xw.Book) -> float:
         """
         操作 Excel 文件，获取指定表格中的值
-        :param df: 解析后的 DataFrame
+        :param mail: EachMail 对象
         :param wb: xlwings 工作簿对象
-        :return: k1: 从 Excel 中获取的值
+        :return: k1: 从 Excel 中获取的经过处理的报价值
         """
 
         try:
-            sheet = wb.sheets[sheet_name]
+            sheet = wb.sheets[mail.sheet_name]
 
-            target, excel_mapping = self.get_except_excel_mapping(sheet_name)
+            target, excel_rules_mapping = self.get_excel_processing_rules(
+                mail.sheet_name
+            )
             # 将指定邮件内容写入 Excel
-            for _, column in df.iterrows():
-                header, value = column
-                if header in excel_mapping:
-                    cell, transform = excel_mapping[header]
+
+            for header, value in mail.df_dict.items():
+                if excel_rules_mapping.get(header):
+                    cell, transform = excel_rules_mapping[header]
                     sheet.range(cell).value = transform(value)
 
             k1 = sheet.range(target).value
@@ -36,46 +40,71 @@ class CustomerCBGProcessor(ProcessorStrategy):
 
         return k1
 
-    def process_mail_html(self, soup: BeautifulSoup, mail: EachMail, k1: float):
+    def process_mail_html(self, mail: EachMail, k1: float):
         """
         处理邮件 HTML 内容
-        :param soup: BeautifulSoup 对象，解析后的邮件 HTML 内容
+        :param mail: EachMail 对象
         :param k1: 从 Excel 中获取的值
         :return: 修改后的 mail
         """
-        for label, td in self.iter_label_rows(soup):
-            if label in ("行权价格1（低）", "行权价格"):
+        quoted_field = self.get_quoted_field(mail.sheet_name)
+
+        for label, td in self.iter_label_rows(mail.soup):
+            if label == quoted_field:
                 span = td.select_one("p > span")
                 if span:
                     span.string = f"{k1:.2%}"
                     print(f"已修改 {label} 为：{k1:.2%}")
                 break
-        mail.content.html = str(soup)
+        mail.content.html = str(mail.soup)
         return mail
 
-    def get_except_excel_mapping(self, sheet_name: str) -> dict:
+    def get_excel_processing_rules(self, sheet_name: str) -> dict:
         """
         获取需要处理的 Excel 中表格的对应位置和方法
         :param sheet_name: 工作表名称
         :return: 映射字典
         """
-        if sheet_name == "看涨阶梯":
-            return CBG_BULL_LADDER_TUPLE
-        elif sheet_name == "二元看涨":
-            return CBG_BINARRY_CALL_TUPLE
-        else:
-            raise ValueError(f"未找到对应的工作表对应操作，工作表: {sheet_name}")
+        excel_processing_rules = CBG_EXCEL_PROCESSING_RULES_MAPPING.get(sheet_name)
+        if not excel_processing_rules:
+            raise ValueError(f"未找到对应的 Excel 规则映射，工作表: {sheet_name}")
+        return excel_processing_rules
 
-    def is_already_quoted(self, soup: BeautifulSoup) -> bool:
+    def is_already_quoted(self, df_dict: dict, sheet_name: str) -> bool:
         """
-        分析邮件HTML，判断是否已完成报价
-        :param soup: BeautifulSoup 对象，解析后的邮件 HTML 内容
-        :return: 如果已完成报价返回 True，否则返回 False
+        判断邮件中是否已完成报价
+
+        已完成报价的逻辑：
+        - 所有字段值都非空
+        - 或需报价字段与系统记录不一致
+
+        :param df_dict: 邮件中提取的表格数据（字典格式）
+        :param sheet_name: 表格名称，用于获取需报价字段
+        :return: True 表示已报价，False 表示未报价
         """
-        for label, td in self.iter_label_rows(soup):
-            if label in ("行权价格1（低）", "行权价格"):
-                return bool(td.get_text(strip=True))
-        return False
+        # 判断是否所有值都非空
+        all_fields_filled = all(df_dict.values())
+
+        # 获取系统记录的需报价字段（字符串）
+        required_fields = self.get_quoted_field(sheet_name)
+
+        # 提取实际为空的字段名组成字符串
+        actual_empty_fields = "".join(
+            str(k).strip() for k, v in df_dict.items() if v is None
+        )
+
+        # 判断是否与系统记录一致
+        field_mismatch = required_fields != actual_empty_fields
+
+        return all_fields_filled or field_mismatch
+
+    def get_quoted_field(self, sheet_name: str) -> str:
+        """
+        获取需要报价的字段
+        :param sheet_name: 工作表名称
+        :return: 需要报价的字段名称
+        """
+        return CBG_QUOTE_FIELD_MAPPING.get(sheet_name)
 
     def iter_label_rows(self, soup: BeautifulSoup):
         """返回需要处理的标签行"""

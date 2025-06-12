@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from email.message import Message
 from typing import List, Optional, Union
 
+from bs4 import BeautifulSoup
+
 
 @dataclass
 class MailContent:
@@ -15,7 +17,10 @@ class MailContent:
 class EachMail:
     msg_id: str  # 邮件编号
     subject: str  # 邮件标题
-    from_name: str
-    from_addr: str
+    from_name: str  # 发件人名称
+    from_addr: str  # 发件人邮箱地址
     content: MailContent
     message: Message  # 原始邮件内容
+    df_dict: Optional[dict] = None  # 解析后的 DataFrame 字典类型数据，默认为 None
+    soup: BeautifulSoup = None  # BeautifulSoup 对象，解析后的邮件 HTML 内容
+    sheet_name: Optional[str] = None

@@ -13,7 +13,7 @@ class ProcessorStrategy(ABC):
         pass
 
     @abstractmethod
-    def get_except_excel_mapping(self):
+    def get_excel_processing_rules(self):
         pass
 
     @abstractmethod

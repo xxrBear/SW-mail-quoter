@@ -10,13 +10,17 @@ from email.mime.text import MIMEText
 from email.utils import make_msgid
 from typing import List, Union
 
+from bs4 import BeautifulSoup
+
 from core.parser import (
     gen_cc,
     parse_from_info,
+    parse_html_to_dict,
     parse_multipart_content,
     parse_subject,
 )
 from models.schemas import EachMail
+from processor.registry import choose_sheet_by_subject, get_processor
 
 
 class EmailClient:
@@ -119,16 +123,41 @@ class EmailClient:
 
             if "看涨阶梯" not in subject:
                 continue
-            # if "90" not in subject:
-            # continue
+
+            if "97" not in subject:
+                continue
 
             # 文本内容
             content = parse_multipart_content(msg)
+            df_dict = parse_html_to_dict(content.html)
+            # print(df_dict)
+            sheet_name = choose_sheet_by_subject(subject)
+
+            if not df_dict:
+                print(f"无可用表格内容，跳过邮件: {subject}")
+                continue
+
+            soup = BeautifulSoup(content.html, "html.parser")
+
             result_dict[from_addr].append(
-                EachMail(msg_id, subject, from_name, from_addr, content, msg)
+                EachMail(
+                    msg_id=msg_id,
+                    subject=subject,
+                    from_name=from_name,
+                    from_addr=from_addr,
+                    content=content,
+                    message=msg,
+                    df_dict=df_dict,
+                    soup=soup,
+                    sheet_name=sheet_name,
+                )
             )
+
         mail_client.close()
-        return result_dict
+
+        modify_dict = self.modify_result_dict(result_dict)
+
+        return modify_dict
 
     def reply_mail(
         self,
@@ -153,8 +182,8 @@ class EmailClient:
 
         # 构建邮件头
         reply_mime["From"] = self.address
-        reply_mime["To"] = original_msg["From"]
-        # reply_mime["To"] = "17855370672@163.com"
+        # reply_mime["To"] = original_msg["From"]
+        reply_mime["To"] = "17855370672@163.com"
 
         reply_mime["Subject"] = f"Re: {original_msg['Subject']}"
         reply_mime["CC"] = gen_cc(original_msg, [self.address])
@@ -194,6 +223,24 @@ class EmailClient:
             raise
         finally:
             smtp_client.quit()
+
+    def modify_result_dict(self, result_dict: dict) -> dict:
+        """将结果字典转换为指定格式"""
+        modify_dict = defaultdict(list)
+
+        for email_addr, mails in result_dict.items():
+            processor = get_processor(email_addr)
+            if not processor:
+                print(f"未找到对应的邮箱处理策略，邮箱地址: {email_addr}")
+                continue
+
+            for mail in mails:
+                if processor.is_already_quoted(mail.df_dict, mail.sheet_name):
+                    print(f"当前邮件已完成报价，跳过邮件: {mail.subject}")
+                    continue
+                modify_dict[email_addr].append(mail)
+
+        return modify_dict
 
 
 def create_mail_client():
