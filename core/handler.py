@@ -29,8 +29,8 @@ class MailHandler:
             for mail in result_list:
                 print(f"处理邮件: {mail.subject} 来自: {eamil_addr}")
 
-                k1 = processor.process_excel(mail, wb)
-                processed_mail = processor.process_mail_html(mail, k1)
+                quote_value = processor.process_excel(mail, wb)
+                processed_mail = processor.process_mail_html(mail, quote_value)
 
                 # 回复邮件
                 self.mail_client.reply_mail(processed_mail)

@@ -15,7 +15,7 @@ class CustomerCBGProcessor(ProcessorStrategy):
         操作 Excel 文件，获取指定表格中的值
         :param mail: EachMail 对象
         :param wb: xlwings 工作簿对象
-        :return: k1: 从 Excel 中获取的经过处理的报价值
+        :return: quote_value: 从 Excel 中获取的经过处理的报价值
         """
 
         try:
@@ -31,20 +31,20 @@ class CustomerCBGProcessor(ProcessorStrategy):
                     cell, transform = excel_rules_mapping[header]
                     sheet.range(cell).value = transform(value)
 
-            k1 = sheet.range(target).value
+            quote_value = sheet.range(target).value
 
             wb.save()
         except Exception as e:
             print("操作 Excel 失败：", e)
             wb.close()
 
-        return k1
+        return quote_value
 
-    def process_mail_html(self, mail: EachMail, k1: float):
+    def process_mail_html(self, mail: EachMail, quote_value: float):
         """
         处理邮件 HTML 内容
         :param mail: EachMail 对象
-        :param k1: 从 Excel 中获取的值
+        :param quote_value: 从 Excel 中获取的报价值
         :return: 修改后的 mail
         """
         quoted_field = self.get_quoted_field(mail.sheet_name)
@@ -53,8 +53,8 @@ class CustomerCBGProcessor(ProcessorStrategy):
             if label == quoted_field:
                 span = td.select_one("p > span")
                 if span:
-                    span.string = f"{k1:.2%}"
-                    print(f"已修改 {label} 为：{k1:.2%}")
+                    span.string = f"{quote_value:.2%}"
+                    print(f"已修改报价字段 {label} 为：{quote_value:.2%}")
                 break
         mail.content.html = str(mail.soup)
         return mail
