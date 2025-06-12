@@ -50,6 +50,7 @@ def process_excel_and_reply_mails():
             # 回复邮件
             mail_client.reply_mail(processed_mail)
 
+    print("所有邮件处理完成，保存并关闭 Excel 文件...")
     wb.close()
     app.quit()
 

@@ -117,8 +117,8 @@ class EmailClient:
             if "衍生品交易" not in subject:
                 continue
 
-            # if "看涨阶梯" not in subject:
-            # continue
+            if "看涨阶梯" not in subject:
+                continue
             # if "90" not in subject:
             # continue
 

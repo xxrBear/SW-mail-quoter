@@ -2,17 +2,19 @@ from processor.base import ProcessorStrategy
 from processor.customer.cbg import CustomerCBGProcessor
 
 processor_map = {
-    "zhaochenxing@swhysc.com": CustomerCBGProcessor(),
+    "swhysc.com": CustomerCBGProcessor(),
 }
 
 
 def get_processor(email: str) -> ProcessorStrategy:
     """
-    根据邮箱地址获取对应的处理策略类实例
+    根据邮箱地址后缀获取对应的处理策略类实例
     :param email: 邮箱地址
     :return: ProcessorStrategy 子类实例
     """
-    return processor_map.get(email)
+    email_suffix = email.split("@")[-1]
+
+    return processor_map.get(email_suffix)
 
 
 subject_sheet_map = {
