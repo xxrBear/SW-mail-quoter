@@ -20,10 +20,15 @@ class MailHandler:
         )
 
         # 处理结果字典，排除已报价的邮件
-        modify_dict = self.modify_result_dict(result_dict)
+        filter_dict = self.filter_quoted_result_dict(result_dict)
 
         # 处理未报价邮件并回复
-        for eamil_addr, result_list in result_dict.items():
+        print("开始处理未报价邮件......")
+        print(
+            "-------------------------------------------------------------------------------"
+        )
+
+        for eamil_addr, result_list in filter_dict.items():
             processor = get_processor(eamil_addr)  # 获取每个客户对应的邮件处理策略
 
             for mail in result_list:
@@ -35,9 +40,7 @@ class MailHandler:
                 # 回复邮件
                 self.mail_client.reply_mail(processed_mail)
 
-        return modify_dict
-
-    def modify_result_dict(self, result_dict: dict) -> dict:
+    def filter_quoted_result_dict(self, result_dict: dict) -> dict:
         """排除已报价的邮件，并返回需要处理的邮件字典
         :param result_dict: 原始邮件字典，键为发件人地址，值为 EachMail 对象列表
         :return: 返回一个新的字典，键为发件人地址，值为需要处理的 EachMail 对象列表
