@@ -30,7 +30,8 @@ def choose_sheet_by_subject(subject: str) -> str:
     :param subject: 邮件主题
     :return: 对应的工作表名称
     """
+
     for keyword, sheet_name in subject_sheet_map.items():
         if keyword in subject:
             return sheet_name
-    raise ValueError(f"未找到对应的工作表，主题: {subject}")
+    return None

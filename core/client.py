@@ -20,7 +20,7 @@ from core.parser import (
     parse_subject,
 )
 from models.schemas import EachMail
-from processor.registry import choose_sheet_by_subject, get_processor
+from processor.registry import choose_sheet_by_subject
 
 
 class EmailClient:
@@ -121,20 +121,18 @@ class EmailClient:
             if "衍生品交易" not in subject:
                 continue
 
-            if "看涨阶梯" not in subject:
-                continue
-
-            if "97" not in subject:
-                continue
-
             # 文本内容
             content = parse_multipart_content(msg)
-            df_dict = parse_html_to_dict(content.html)
-            # print(df_dict)
-            sheet_name = choose_sheet_by_subject(subject)
 
+            # HTML　表格的内容（字典类型）
+            df_dict = parse_html_to_dict(content.html)
             if not df_dict:
                 print(f"无可用表格内容，跳过邮件: {subject}")
+                continue
+
+            sheet_name = choose_sheet_by_subject(subject)
+            if not sheet_name:
+                print(f"未找到对应的工作表名称，跳过邮件: {subject}")
                 continue
 
             soup = BeautifulSoup(content.html, "html.parser")
@@ -155,9 +153,7 @@ class EmailClient:
 
         mail_client.close()
 
-        modify_dict = self.modify_result_dict(result_dict)
-
-        return modify_dict
+        return result_dict
 
     def reply_mail(
         self,
@@ -223,24 +219,6 @@ class EmailClient:
             raise
         finally:
             smtp_client.quit()
-
-    def modify_result_dict(self, result_dict: dict) -> dict:
-        """将结果字典转换为指定格式"""
-        modify_dict = defaultdict(list)
-
-        for email_addr, mails in result_dict.items():
-            processor = get_processor(email_addr)
-            if not processor:
-                print(f"未找到对应的邮箱处理策略，邮箱地址: {email_addr}")
-                continue
-
-            for mail in mails:
-                if processor.is_already_quoted(mail.df_dict, mail.sheet_name):
-                    print(f"当前邮件已完成报价，跳过邮件: {mail.subject}")
-                    continue
-                modify_dict[email_addr].append(mail)
-
-        return modify_dict
 
 
 def create_mail_client():
