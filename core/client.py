@@ -16,6 +16,7 @@ from core.parser import (
     gen_cc,
     parse_from_info,
     parse_html_to_dict,
+    parse_mail_sent_time,
     parse_multipart_content,
     parse_subject,
 )
@@ -137,6 +138,11 @@ class EmailClient:
 
             soup = BeautifulSoup(content.html, "html.parser")
 
+            sent_time = parse_mail_sent_time(msg)
+            if not sent_time:
+                print(f"无法解析发送时间，跳过邮件: {subject}")
+                continue
+
             result_dict[from_addr].append(
                 EachMail(
                     msg_id=msg_id,
@@ -148,6 +154,7 @@ class EmailClient:
                     df_dict=df_dict,
                     soup=soup,
                     sheet_name=sheet_name,
+                    sent_time=sent_time,
                 )
             )
 
@@ -164,7 +171,6 @@ class EmailClient:
         reply_mime = self._build_reply_mime(last_email)
 
         self._send_reply_mail(reply_mime)
-        print(f"已回复邮件: {last_email.subject}")
 
     def _build_reply_mime(self, last_email: EachMail) -> MIMEMultipart:
         """构建回复邮件的 MIMEMultipart 对象"""

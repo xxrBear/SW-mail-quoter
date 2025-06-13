@@ -25,5 +25,16 @@ def process_excel_and_reply_mails():
     app.quit()
 
 
+def init_db():
+    """初始化数据库"""
+    from db.models import Base
+    from db.engine import engine
+
+    Base.metadata.create_all(bind=engine)
+    print("数据库初始化完成......")
+
+
 if __name__ == "__main__":
+    init_db()
     process_excel_and_reply_mails()
+    # init_db()
