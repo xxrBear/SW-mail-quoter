@@ -244,3 +244,7 @@ def create_mail_client():
         address=required_env_vars.get("EMAIL_USER_NAME"),
         password=required_env_vars.get("EMAIL_USER_PASS"),
     )
+
+
+# 全局单例
+mail_client = create_mail_client()
