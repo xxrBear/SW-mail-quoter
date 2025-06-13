@@ -1,4 +1,5 @@
 import base64
+import hashlib
 from email.header import decode_header
 from email.message import Message
 from email.utils import parseaddr, parsedate_to_datetime
@@ -6,7 +7,20 @@ from typing import List, Optional, Tuple
 
 import pandas as pd
 
-from core.schemas import MailContent
+from core.schemas import EachMail, MailContent
+
+
+def get_mail_hash(mail: EachMail) -> str:
+    """
+    生成邮件的唯一哈希值，用于标识邮件
+    """
+    subject = mail.subject
+
+    sent_time = mail.sent_time
+
+    join_str = f"{subject} - {sent_time.strftime('%Y-%m-%d %H:%M:%S')}"
+    hash_obj = hashlib.sha256(join_str.encode("utf-8"))
+    return hash_obj.hexdigest()
 
 
 def parse_mail_sent_time(msg: Message) -> Optional[str]:

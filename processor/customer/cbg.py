@@ -51,9 +51,9 @@ class CustomerCBGProcessor(ProcessorStrategy):
 
         for label, td in self.iter_label_rows(mail.soup):
             if label == quoted_field:
-                span = td.select_one("p > span")
-                if span:
-                    span.string = f"{quote_value:.2%}"
+                p = td.select_one("p")
+                if p:
+                    p.string = f"{quote_value:.2%}"
                     print(f"已修改报价字段 {label} 为：{quote_value:.2%}")
                 break
         mail.content.html = str(mail.soup)

@@ -1,9 +1,19 @@
-from sqlalchemy import DateTime, String, func
+import enum
+
+from sqlalchemy import DateTime, Enum, String, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 class Base(DeclarativeBase):
     pass
+
+
+class MailStateEnum(enum.Enum):
+    """邮件处理状态"""
+
+    UNPROCESSED = "unprocessed"  # 未处理
+    PROCESSED = "processed"  # 已自动处理
+    MANUAL = "manual"  # 人工处理
 
 
 class MailState(Base):
@@ -16,3 +26,8 @@ class MailState(Base):
     mail_hash: Mapped[str] = mapped_column(
         String(64), unique=True, index=True
     )  # 哈希值，唯一且加索引
+    state: Mapped[MailStateEnum] = mapped_column(
+        Enum(MailStateEnum, name="mail_state_enum"),
+        default=MailStateEnum.UNPROCESSED,
+        nullable=False,
+    )
