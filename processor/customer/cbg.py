@@ -1,7 +1,7 @@
 import xlwings as xw
 from bs4 import BeautifulSoup
 
-from models.schemas import EachMail
+from core.schemas import EachMail
 from processor.base import ProcessorStrategy
 from processor.mapping import (
     CBG_EXCEL_PROCESSING_RULES_MAPPING,

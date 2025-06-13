@@ -6,7 +6,7 @@ from typing import List, Optional, Tuple
 
 import pandas as pd
 
-from models.schemas import MailContent
+from core.schemas import MailContent
 
 
 def parse_html_to_dict(html: str) -> Optional[dict]:

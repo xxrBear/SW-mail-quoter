@@ -19,7 +19,7 @@ from core.parser import (
     parse_multipart_content,
     parse_subject,
 )
-from models.schemas import EachMail
+from core.schemas import EachMail
 from processor.registry import choose_sheet_by_subject
 
 
