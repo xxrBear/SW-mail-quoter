@@ -122,9 +122,6 @@ class EmailClient:
             if "衍生品交易" not in subject:
                 continue
 
-            if "185" not in subject:
-                continue
-
             # 文本内容
             content = parse_multipart_content(msg)
 
