@@ -36,6 +36,9 @@ class MailState(Base):
         default=MailStateEnum.UNPROCESSED,
         nullable=False,
     )
+    sheet_name: Mapped[str] = mapped_column(
+        String(64), nullable=False, index=True
+    )  # 工作表名称，索引加速查询
 
     @with_session
     def update_mail_state(
@@ -45,6 +48,8 @@ class MailState(Base):
         mail_hash = get_mail_hash(mail)
         mail_state = MailState(
             mail_hash=mail_hash,
+            sheet_name=mail.sheet_name,
+            state=state,
         )
 
         session.add(mail_state)
@@ -57,3 +62,14 @@ class MailState(Base):
         return (
             session.query(MailState).filter_by(mail_hash=mail_hash).first() is not None
         )
+
+    @with_session
+    def count_sheet_name(session: SessionLocal, self, mail: EachMail) -> MailStateEnum:
+        """获取当天sheet_name对应的数量"""
+        mail_count = (
+            session.query(MailState)
+            .filter_by(sheet_name=mail.sheet_name, state=MailStateEnum.PROCESSED)
+            .count()
+        )
+
+        return mail_count

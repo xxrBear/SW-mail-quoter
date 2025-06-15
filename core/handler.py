@@ -1,9 +1,11 @@
 from collections import defaultdict
 from datetime import date
+from typing import Dict, List
 
 import xlwings as xw
 
 from core.client import mail_client
+from core.schemas import EachMail
 from core.utils import print_banner
 from db.models import MailState, MailStateEnum
 from processor.registry import get_processor
@@ -14,7 +16,7 @@ class MailHandler:
         self.folder = folder
         self.since_date = since_date
 
-    def handle(self, wb: xw.Book) -> dict:
+    def handle(self, wb: xw.Book) -> None:
         # 读取邮件并获取结果字典
         result_dict = mail_client.read_mail(
             folder=self.folder, since_date=self.since_date
@@ -31,7 +33,14 @@ class MailHandler:
             for mail in result_list:
                 print(f"处理邮件: {mail.subject} 来自: {eamil_addr}")
 
-                quote_value = processor.process_excel(mail, wb)
+                # 第一次处理时清除 Excel 中的值
+                sheet_name_count = MailState().count_sheet_name(mail)
+                if not sheet_name_count:
+                    self.clear_sheet_columns(wb, mail.sheet_name)
+                else:
+                    self.copy_sheet_columns(wb, mail.sheet_name, sheet_name_count)
+
+                quote_value = processor.process_excel(mail, wb, sheet_name_count)
                 processed_mail = processor.process_mail_html(mail, quote_value)
 
                 # 回复邮件
@@ -41,7 +50,9 @@ class MailHandler:
                 print(f"已回复邮件: {processed_mail.subject} 来自: {eamil_addr}")
                 print()
 
-    def filter_quoted_result_dict(self, result_dict: dict) -> dict:
+    def filter_quoted_result_dict(
+        self, result_dict: Dict[str, List[EachMail]]
+    ) -> Dict[str, List[EachMail]]:
         """排除已报价的邮件，并返回需要处理的邮件字典"""
         modify_dict = defaultdict(list)
 
@@ -65,3 +76,14 @@ class MailHandler:
                 modify_dict[email_addr].append(mail)
 
         return modify_dict
+
+    def clear_sheet_columns(self, wb: xw.Book, sheet_name: str) -> None:
+        sheet = wb.sheets[sheet_name]
+        sheet.range("C:Z").delete()  # 清除值、格式、批注等
+
+    def copy_sheet_columns(
+        self, wb: xw.Book, sheet_name: str, sheet_name_count: int
+    ) -> None:
+        sheet = wb.sheets[sheet_name]
+
+        sheet.range("B:B").api.Copy(Destination=sheet.range("C:C").api)

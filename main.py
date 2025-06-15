@@ -27,14 +27,15 @@ def process_excel_and_reply_mails():
     except:
         raise
     finally:
+        wb.save()
         wb.close()
         app.quit()
 
 
 def init_db():
     """初始化数据库"""
-    from db.models import Base
     from db.engine import engine
+    from db.models import Base
 
     Base.metadata.create_all(bind=engine)
     print_init_db("数据库初始化完成......")

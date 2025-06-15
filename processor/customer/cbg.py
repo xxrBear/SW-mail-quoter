@@ -2,6 +2,7 @@ import xlwings as xw
 from bs4 import BeautifulSoup
 
 from core.schemas import EachMail
+from core.utils import calc_next_letter
 from processor.base import ProcessorStrategy
 from processor.mapping import (
     CBG_EXCEL_PROCESSING_RULES_MAPPING,
@@ -10,7 +11,9 @@ from processor.mapping import (
 
 
 class CustomerCBGProcessor(ProcessorStrategy):
-    def process_excel(self, mail: EachMail, wb: xw.Book) -> float:
+    def process_excel(
+        self, mail: EachMail, wb: xw.Book, sheet_name_count: int
+    ) -> float:
         """
         操作 Excel 文件，获取指定表格中的值
         :param mail: EachMail 对象
@@ -25,18 +28,26 @@ class CustomerCBGProcessor(ProcessorStrategy):
                 mail.sheet_name
             )
             # 将指定邮件内容写入 Excel
-
+            start_letter = "C"
             for header, value in mail.df_dict.items():
                 if excel_rules_mapping.get(header):
                     cell, transform = excel_rules_mapping[header]
-                    sheet.range(cell).value = transform(value)
+                    finally_cell = calc_next_letter(
+                        start_letter, sheet_name_count
+                    ) + str(cell)
+                    print(finally_cell)
+                    sheet.range(finally_cell).value = transform(value)
 
-            quote_value = sheet.range(target).value
+            # 获取需报价字段
+            finally_target = calc_next_letter(start_letter, sheet_name_count) + str(
+                target
+            )
+            quote_value = sheet.range(finally_target).value
 
-            wb.save()
+            # wb.save()
         except Exception as e:
             print("操作 Excel 失败：", e)
-            wb.close()
+            # wb.close()
 
         return quote_value
 
@@ -53,6 +64,7 @@ class CustomerCBGProcessor(ProcessorStrategy):
             if label == quoted_field:
                 p = td.select_one("p")
                 if p:
+                    quote_value = quote_value if quote_value else 0
                     p.string = f"{quote_value:.2%}"
                     print(f"已修改报价字段 {label} 为：{quote_value:.2%}")
                 break
