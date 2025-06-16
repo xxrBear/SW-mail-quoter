@@ -35,7 +35,7 @@ class CustomerCBGProcessor(ProcessorStrategy):
                     finally_cell = calc_next_letter(
                         start_letter, sheet_name_count
                     ) + str(cell)
-                    print(finally_cell)
+                    # print(header, finally_cell, value)
                     sheet.range(finally_cell).value = transform(value)
 
             # 获取需报价字段

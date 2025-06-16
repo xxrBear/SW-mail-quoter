@@ -6,7 +6,7 @@ import xlwings as xw
 
 from core.client import mail_client
 from core.schemas import EachMail
-from core.utils import print_banner
+from core.utils import calc_next_letter, print_banner
 from db.models import MailState, MailStateEnum
 from processor.registry import get_processor
 
@@ -35,10 +35,10 @@ class MailHandler:
 
                 # 第一次处理时清除 Excel 中的值
                 sheet_name_count = MailState().count_sheet_name(mail)
+                print(sheet_name_count)
                 if not sheet_name_count:
                     self.clear_sheet_columns(wb, mail.sheet_name)
-                else:
-                    self.copy_sheet_columns(wb, mail.sheet_name, sheet_name_count)
+                self.copy_sheet_columns(wb, mail.sheet_name, sheet_name_count)
 
                 quote_value = processor.process_excel(mail, wb, sheet_name_count)
                 processed_mail = processor.process_mail_html(mail, quote_value)
@@ -78,12 +78,31 @@ class MailHandler:
         return modify_dict
 
     def clear_sheet_columns(self, wb: xw.Book, sheet_name: str) -> None:
+        """首次处理时，清空对应表格的列"""
         sheet = wb.sheets[sheet_name]
         sheet.range("C:Z").delete()  # 清除值、格式、批注等
+        wb.save()
 
     def copy_sheet_columns(
         self, wb: xw.Book, sheet_name: str, sheet_name_count: int
     ) -> None:
+        """复制工作表的列"""
         sheet = wb.sheets[sheet_name]
+        letter = calc_next_letter("C", sheet_name_count)
+        # print(f"复制的列数是 {letter}")
 
-        sheet.range("B:B").api.Copy(Destination=sheet.range("C:C").api)
+        # --- 禁用 Excel 事件和显示警告 ---
+        wb.app.enable_events = False  # 禁用VBA事件
+        wb.app.display_alerts = False  # 禁用Excel自身的警告弹窗
+        try:
+            sheet.range("B1:B100").api.Copy(
+                Destination=sheet.range(f"{letter}1:{letter}100").api
+            )
+            sheet.api.Application.CutCopyMode = False  # 清除 复制模式 的虚线框
+
+        finally:
+            # 无论代码是否出错，都确保这些设置被恢复，否则会影响后续的Excel操作
+            wb.app.enable_events = True
+            wb.app.display_alerts = True
+            sheet.api.Application.CutCopyMode = True
+            wb.save()

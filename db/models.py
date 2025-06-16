@@ -1,4 +1,5 @@
 import enum
+from datetime import date
 
 from sqlalchemy import DateTime, Enum, String, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -68,7 +69,11 @@ class MailState(Base):
         """获取当天sheet_name对应的数量"""
         mail_count = (
             session.query(MailState)
-            .filter_by(sheet_name=mail.sheet_name, state=MailStateEnum.PROCESSED)
+            .filter(
+                MailState.sheet_name == mail.sheet_name,
+                MailState.state == MailStateEnum.PROCESSED,
+                MailState.created_time >= date.today(),
+            )
             .count()
         )
 
