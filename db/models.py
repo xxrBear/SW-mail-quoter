@@ -1,4 +1,3 @@
-import enum
 from datetime import date
 
 from sqlalchemy import DateTime, Enum, String, func
@@ -8,18 +7,11 @@ from core.parser import get_mail_hash
 from core.schemas import EachMail
 from db.decorator import with_session
 from db.engine import SessionLocal
+from db.enums import MailStateEnum
 
 
 class Base(DeclarativeBase):
     pass
-
-
-class MailStateEnum(enum.Enum):
-    """邮件处理状态"""
-
-    UNPROCESSED = "unprocessed"  # 未处理
-    PROCESSED = "processed"  # 已自动处理
-    MANUAL = "manual"  # 人工处理
 
 
 class MailState(Base):
@@ -29,9 +21,9 @@ class MailState(Base):
     created_time: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
-    mail_hash: Mapped[str] = mapped_column(
-        String(64), unique=True, index=True
-    )  # 哈希值，唯一且加索引
+    subject: Mapped[str] = mapped_column(
+        String(256), nullable=False, index=True
+    )  # 邮件主题，索引加速查询
     state: Mapped[MailStateEnum] = mapped_column(
         Enum(MailStateEnum, name="mail_state_enum"),
         default=MailStateEnum.UNPROCESSED,
@@ -40,6 +32,9 @@ class MailState(Base):
     sheet_name: Mapped[str] = mapped_column(
         String(64), nullable=False, index=True
     )  # 工作表名称，索引加速查询
+    mail_hash: Mapped[str] = mapped_column(
+        String(64), unique=True, index=True
+    )  # 哈希值，唯一且加索引
 
     @with_session
     def update_mail_state(
@@ -51,13 +46,14 @@ class MailState(Base):
             mail_hash=mail_hash,
             sheet_name=mail.sheet_name,
             state=state,
+            subject=mail.subject,
         )
 
         session.add(mail_state)
         session.commit()
 
     @with_session
-    def is_mail_exists(session: SessionLocal, self, mail: EachMail) -> bool:
+    def mail_exists(session: SessionLocal, self, mail: EachMail) -> bool:
         """检查邮件是否已存在"""
         mail_hash = get_mail_hash(mail)
         return (
@@ -65,7 +61,9 @@ class MailState(Base):
         )
 
     @with_session
-    def count_sheet_name(session: SessionLocal, self, mail: EachMail) -> MailStateEnum:
+    def count_today_sheet_names(
+        session: SessionLocal, self, mail: EachMail
+    ) -> MailStateEnum:
         """获取当天sheet_name对应的数量"""
         mail_count = (
             session.query(MailState)

@@ -2,7 +2,7 @@ import xlwings as xw
 from bs4 import BeautifulSoup
 
 from core.schemas import EachMail
-from core.utils import calc_next_letter
+from core.utils import add_excel_subject_cell, calc_next_letter
 from processor.base import ProcessorStrategy
 from processor.mapping import (
     CBG_EXCEL_PROCESSING_RULES_MAPPING,
@@ -28,21 +28,23 @@ class CustomerCBGProcessor(ProcessorStrategy):
                 mail.sheet_name
             )
             # 将指定邮件内容写入 Excel
+            next_letter = calc_next_letter("C", sheet_name_count)
             for header, value in mail.df_dict.items():
                 if excel_rules_mapping.get(header):
                     cell, transform = excel_rules_mapping[header]
-                    finally_cell = calc_next_letter("C", sheet_name_count) + str(cell)
+                    finally_cell = next_letter + str(cell)
                     # print(header, finally_cell, value)
                     sheet.range(finally_cell).value = transform(value)
 
             # 获取需报价字段
-            finally_target = calc_next_letter("C", sheet_name_count) + str(target)
+            finally_target = next_letter + str(target)
             quote_value = sheet.range(finally_target).value
 
-            # wb.save()
+            # Excel 中添加邮件主题
+            add_excel_subject_cell(wb, mail, next_letter)
+
         except Exception as e:
             print("操作 Excel 失败：", e)
-            # wb.close()
 
         return quote_value
 

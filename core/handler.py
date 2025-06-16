@@ -33,10 +33,8 @@ class MailHandler:
             for mail in result_list:
                 print(f"处理邮件: {mail.subject} 来自: {eamil_addr}")
 
-                # 第一次处理时清除 Excel 中的值
-                sheet_name_count = MailState().count_sheet_name(mail)
-                # print(sheet_name_count)
-
+                # 处理 Excel 列
+                sheet_name_count = MailState().count_today_sheet_names(mail)
                 if not sheet_name_count:
                     ExcelHandler.clear_sheet_columns(wb, mail.sheet_name)
                 ExcelHandler.copy_sheet_columns(wb, mail.sheet_name, sheet_name_count)
@@ -45,7 +43,7 @@ class MailHandler:
                 processed_mail = processor.process_mail_html(mail, quote_value)
 
                 # 回复邮件
-                mail_client.reply_mail(processed_mail)
+                # mail_client.reply_mail(processed_mail)
 
                 # 写入数据库
                 MailState().update_mail_state(processed_mail, MailStateEnum.PROCESSED)
@@ -66,7 +64,7 @@ class MailHandler:
 
             for mail in mails:
                 # 过滤已处理过的邮件
-                if MailState().is_mail_exists(mail):
+                if MailState().mail_exists(mail):
                     continue
 
                 # 处理已报价邮件
