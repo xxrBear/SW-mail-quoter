@@ -38,8 +38,8 @@ class MailHandler:
                 # print(sheet_name_count)
 
                 if not sheet_name_count:
-                    self.clear_sheet_columns(wb, mail.sheet_name)
-                self.copy_sheet_columns(wb, mail.sheet_name, sheet_name_count)
+                    ExcelHandler.clear_sheet_columns(wb, mail.sheet_name)
+                ExcelHandler.copy_sheet_columns(wb, mail.sheet_name, sheet_name_count)
 
                 quote_value = processor.process_excel(mail, wb, sheet_name_count)
                 processed_mail = processor.process_mail_html(mail, quote_value)
@@ -79,14 +79,18 @@ class MailHandler:
 
         return modify_dict
 
-    def clear_sheet_columns(self, wb: xw.Book, sheet_name: str) -> None:
+
+class ExcelHandler:
+    @classmethod
+    def clear_sheet_columns(cls, wb: xw.Book, sheet_name: str) -> None:
         """首次处理时，清空对应表格的列"""
         sheet = wb.sheets[sheet_name]
         sheet.range("C:Z").delete()  # 清除值、格式、批注等
         wb.save()
 
+    @classmethod
     def copy_sheet_columns(
-        self, wb: xw.Book, sheet_name: str, sheet_name_count: int
+        cls, wb: xw.Book, sheet_name: str, sheet_name_count: int
     ) -> None:
         """复制工作表的列"""
         sheet = wb.sheets[sheet_name]
