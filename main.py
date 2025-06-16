@@ -33,12 +33,18 @@ def process_excel_and_reply_mails():
 
 
 def init_db():
-    """初始化数据库"""
+    """初始化数据库和表结构表"""
     from db.engine import engine
     from db.models import Base
+    from sqlalchemy import inspect
 
-    Base.metadata.create_all(bind=engine)
-    print_init_db("数据库初始化完成......")
+    inspector = inspect(engine)
+
+    if inspector.has_table("mail_state"):
+        print_init_db("数据库已存在，无需重新创建......")
+    else:
+        Base.metadata.create_all(bind=engine)
+        print_init_db("数据库初始化完成......")
 
 
 if __name__ == "__main__":

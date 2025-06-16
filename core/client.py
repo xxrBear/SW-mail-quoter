@@ -112,7 +112,6 @@ class EmailClient:
             # 邮件内容
             raw_email = msg_data[0][1]
             msg = email.message_from_bytes(raw_email)
-            # print(msg)
 
             # 邮件标题和发件人信息
             subject = parse_subject(msg)
@@ -122,10 +121,9 @@ class EmailClient:
             if "衍生品交易" not in subject:
                 continue
 
-            if "看涨阶梯" not in subject:
-                continue
-
-            if "122" not in subject:
+            filter_subject_list = ["看涨阶梯", "二元看涨"]
+            if not any(i for i in filter_subject_list if i in subject):
+                print(f"邮件处理策略未配置，跳过邮件: {subject}")
                 continue
 
             # 文本内容

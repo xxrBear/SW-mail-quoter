@@ -28,20 +28,15 @@ class CustomerCBGProcessor(ProcessorStrategy):
                 mail.sheet_name
             )
             # 将指定邮件内容写入 Excel
-            start_letter = "C"
             for header, value in mail.df_dict.items():
                 if excel_rules_mapping.get(header):
                     cell, transform = excel_rules_mapping[header]
-                    finally_cell = calc_next_letter(
-                        start_letter, sheet_name_count
-                    ) + str(cell)
+                    finally_cell = calc_next_letter("C", sheet_name_count) + str(cell)
                     # print(header, finally_cell, value)
                     sheet.range(finally_cell).value = transform(value)
 
             # 获取需报价字段
-            finally_target = calc_next_letter(start_letter, sheet_name_count) + str(
-                target
-            )
+            finally_target = calc_next_letter("C", sheet_name_count) + str(target)
             quote_value = sheet.range(finally_target).value
 
             # wb.save()

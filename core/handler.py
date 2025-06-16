@@ -35,7 +35,8 @@ class MailHandler:
 
                 # 第一次处理时清除 Excel 中的值
                 sheet_name_count = MailState().count_sheet_name(mail)
-                print(sheet_name_count)
+                # print(sheet_name_count)
+
                 if not sheet_name_count:
                     self.clear_sheet_columns(wb, mail.sheet_name)
                 self.copy_sheet_columns(wb, mail.sheet_name, sheet_name_count)
@@ -45,6 +46,7 @@ class MailHandler:
 
                 # 回复邮件
                 mail_client.reply_mail(processed_mail)
+
                 # 写入数据库
                 MailState().update_mail_state(processed_mail, MailStateEnum.PROCESSED)
                 print(f"已回复邮件: {processed_mail.subject} 来自: {eamil_addr}")
@@ -89,7 +91,6 @@ class MailHandler:
         """复制工作表的列"""
         sheet = wb.sheets[sheet_name]
         letter = calc_next_letter("C", sheet_name_count)
-        # print(f"复制的列数是 {letter}")
 
         # --- 禁用 Excel 事件和显示警告 ---
         wb.app.enable_events = False  # 禁用VBA事件
