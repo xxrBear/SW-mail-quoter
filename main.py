@@ -3,7 +3,7 @@ from datetime import date
 import xlwings as xw
 
 from core.handler import MailHandler
-from core.utils import print_init_db
+from core.utils import print_banner, print_init_db
 
 
 def process_excel_and_reply_mails():
@@ -42,7 +42,7 @@ def init_db():
     inspector = inspect(engine)
 
     if inspector.has_table("mail_state"):
-        print_init_db("Success!")
+        print_banner("申万宏源处理脚本")
     else:
         Base.metadata.create_all(bind=engine)
         print_init_db("数据库表初始化完成......")

@@ -5,6 +5,7 @@ from typing import Dict, List
 import xlwings as xw
 
 from core.client import mail_client
+from core.context import mail_context
 from core.schemas import EachMail
 from core.utils import calc_next_letter, print_banner
 from db.models import MailState, MailStateEnum
@@ -26,8 +27,8 @@ class MailHandler:
         filter_dict = self.filter_quoted_result_dict(result_dict)
 
         # 处理未报价邮件并回复
-        print_banner("开始处理未报价邮件......")
         for eamil_addr, result_list in filter_dict.items():
+            print_banner("开始处理未报价邮件......")
             processor = get_processor(eamil_addr)  # 获取每个客户对应的邮件处理策略
 
             for mail in result_list:
@@ -43,11 +44,14 @@ class MailHandler:
                 processed_mail = processor.process_mail_html(mail, quote_value)
 
                 # 回复邮件
-                # mail_client.reply_mail(processed_mail)
+                mail_client.reply_mail(processed_mail)
 
                 # 写入数据库
                 MailState().update_mail_state(processed_mail, MailStateEnum.PROCESSED)
                 print(f"已回复邮件: {processed_mail.subject} 来自: {eamil_addr} \n ")
+
+        # 处理异常邮件
+        ExcelHandler.process_abnormal_mails_sheet(wb)
 
     def filter_quoted_result_dict(
         self, result_dict: Dict[str, List[EachMail]]
@@ -66,10 +70,13 @@ class MailHandler:
                 if MailState().mail_exists(mail):
                     continue
 
-                # 处理已报价邮件
+                # 处理不满足报价条件的邮件
                 if processor.cannot_quote(mail):
-                    print(f"当前邮件不满足报价条件，跳过邮件: {mail.subject}")
-                    MailState().update_mail_state(mail, MailStateEnum.MANUAL)
+                    mail_context.skip_mail(
+                        mail.subject,
+                        "当前邮件不满足报价条件，跳过邮件",
+                        mail.from_addr,
+                    )
                     continue
 
                 modify_dict[email_addr].append(mail)
@@ -97,6 +104,7 @@ class ExcelHandler:
         wb.app.enable_events = False  # 禁用VBA事件
         wb.app.display_alerts = False  # 禁用Excel自身的警告弹窗
         try:
+            # 从 B 列复制一百行
             sheet.range("B1:B100").api.Copy(
                 Destination=sheet.range(f"{letter}1:{letter}100").api
             )
@@ -108,3 +116,39 @@ class ExcelHandler:
             wb.app.display_alerts = True
             sheet.api.Application.CutCopyMode = True
             wb.save()
+
+    @classmethod
+    def process_abnormal_mails_sheet(cls, wb: xw.Book):
+        print_banner("开始处理异常邮件.....")
+
+        sheet_names = [i.name for i in wb.sheets]
+
+        if "异常结构" not in sheet_names:
+            sheet = wb.sheets.add(name="异常结构", before="8080结构")
+            wb.save()
+        else:
+            sheet = wb.sheets["异常结构"]
+
+        sheet.range("A1").value = "邮件主题"
+        sheet.range("B1").value = "失败原因"
+        sheet.range("C1").value = "发件人"
+
+        # 定位表头范围
+        header_range = sheet.range("A1").expand("right")
+        # 设置样式
+        header_range.api.Font.Bold = True  # 加粗
+        header_range.api.HorizontalAlignment = -4108  # 水平居中
+        header_range.api.VerticalAlignment = -4108  # 垂直居中
+        header_range.color = (192, 192, 192)  # 设置背景色
+        header_range.columns.autofit()
+        header_range.column_width = 80  # 表头宽度
+        header_range.row_height = 30  # 表头高度
+        # 表格颜色
+        sheet.api.Tab.Color = 255  # 红色
+
+        for num, mail in enumerate(mail_context.email, 2):
+            sheet.range(f"A{num}").value = mail.get("subject")
+            sheet.range(f"B{num}").value = mail.get("reason")
+            sheet.range(f"C{num}").value = mail.get("sent_addr")
+
+        wb.save()

@@ -12,6 +12,7 @@ from typing import List, Union
 
 from bs4 import BeautifulSoup
 
+from core.context import mail_context
 from core.parser import (
     gen_cc,
     parse_from_info,
@@ -123,7 +124,9 @@ class EmailClient:
 
             filter_subject_list = ["看涨阶梯", "二元看涨"]
             if not any(i for i in filter_subject_list if i in subject):
-                print(f"邮件处理策略未配置，跳过邮件: {subject}")
+                mail_context.skip_mail(
+                    subject, "邮件处理策略未配置，跳过邮件", from_addr
+                )
                 continue
 
             # 文本内容
@@ -132,19 +135,21 @@ class EmailClient:
             # HTML　表格的内容（字典类型）
             df_dict = parse_html_to_dict(content.html)
             if not df_dict:
-                print(f"无可用表格内容，跳过邮件: {subject}")
+                mail_context.skip_mail(subject, "无可用表格内容，跳过邮件", from_addr)
                 continue
 
             sheet_name = choose_sheet_by_subject(subject)
             if not sheet_name:
-                print(f"未找到对应的工作表名称，跳过邮件: {subject}")
+                mail_context.skip_mail(
+                    subject, "未找到对应的工作表名称，跳过邮件", from_addr
+                )
                 continue
 
             soup = BeautifulSoup(content.html, "html.parser")
 
             sent_time = parse_mail_sent_time(msg)
             if not sent_time:
-                print(f"无法解析发送时间，跳过邮件: {subject}")
+                mail_context.skip_mail(subject, "无法解析发送时间，跳过邮件", from_addr)
                 continue
 
             result_dict[from_addr].append(
