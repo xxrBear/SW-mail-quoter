@@ -3,7 +3,8 @@ from processor.customer.cbg import CustomerCBGProcessor
 
 # 邮箱后缀与处理策略类的映射，只保存了一个实例(类似单例模式)
 processor_map = {
-    "swhysc.com": CustomerCBGProcessor(),
+    "swhysc.com": CustomerCBGProcessor(),  # 测试邮箱后缀
+    "cgbchina.com.cn": CustomerCBGProcessor(),  # 广发银行
 }
 
 
