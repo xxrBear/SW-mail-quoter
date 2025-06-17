@@ -47,8 +47,7 @@ class MailHandler:
 
                 # 写入数据库
                 MailState().update_mail_state(processed_mail, MailStateEnum.PROCESSED)
-                print(f"已回复邮件: {processed_mail.subject} 来自: {eamil_addr}")
-                print()
+                print(f"已回复邮件: {processed_mail.subject} 来自: {eamil_addr} \n ")
 
     def filter_quoted_result_dict(
         self, result_dict: Dict[str, List[EachMail]]
@@ -68,8 +67,8 @@ class MailHandler:
                     continue
 
                 # 处理已报价邮件
-                if processor.is_already_quoted(mail.df_dict, mail.sheet_name):
-                    print(f"当前邮件已完成报价，跳过邮件: {mail.subject}")
+                if processor.cannot_quote(mail):
+                    print(f"当前邮件不满足报价条件，跳过邮件: {mail.subject}")
                     MailState().update_mail_state(mail, MailStateEnum.MANUAL)
                     continue
 

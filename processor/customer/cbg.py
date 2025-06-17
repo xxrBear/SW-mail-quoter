@@ -79,11 +79,11 @@ class CustomerCBGProcessor(ProcessorStrategy):
             raise ValueError(f"未找到对应的 Excel 规则映射，工作表: {sheet_name}")
         return excel_processing_rules
 
-    def is_already_quoted(self, df_dict: dict, sheet_name: str) -> bool:
+    def cannot_quote(self, mail: EachMail) -> bool:
         """
-        判断邮件中是否已完成报价
+        判断邮件中是否是不满足报价条件
 
-        已完成报价的逻辑：
+        不能报价的逻辑所需条件：
         - 所有字段值都非空
         - 或需报价字段与系统记录不一致
 
@@ -92,14 +92,14 @@ class CustomerCBGProcessor(ProcessorStrategy):
         :return: True 表示已报价，False 表示未报价
         """
         # 判断是否所有值都非空
-        all_fields_filled = all(df_dict.values())
+        all_fields_filled = all(mail.df_dict.values())
 
         # 获取系统记录的需报价字段（字符串）
-        required_fields = self.get_quoted_field(sheet_name)
+        required_fields = self.get_quoted_field(mail.sheet_name)
 
         # 提取实际为空的字段名组成字符串
         actual_empty_fields = "".join(
-            str(k).strip() for k, v in df_dict.items() if v is None
+            str(k).strip() for k, v in mail.df_dict.items() if v is None
         )
 
         # 判断是否与系统记录一致

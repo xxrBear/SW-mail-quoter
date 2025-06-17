@@ -17,5 +17,5 @@ class ProcessorStrategy(ABC):
         pass
 
     @abstractmethod
-    def is_already_quoted(self, tag: str) -> bool:
+    def cannot_quote(self) -> bool:
         pass

@@ -42,7 +42,7 @@ def init_db():
     inspector = inspect(engine)
 
     if inspector.has_table("mail_state"):
-        print_init_db("数据表已存在，无需重新创建......")
+        print_init_db("Success!")
     else:
         Base.metadata.create_all(bind=engine)
         print_init_db("数据库表初始化完成......")
