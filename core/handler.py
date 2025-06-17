@@ -44,7 +44,7 @@ class MailHandler:
                 processed_mail = processor.process_mail_html(mail, quote_value)
 
                 # 回复邮件
-                mail_client.reply_mail(processed_mail)
+                # mail_client.reply_mail(processed_mail)
 
                 # 写入数据库
                 MailState().update_mail_state(processed_mail, MailStateEnum.PROCESSED)
@@ -61,11 +61,16 @@ class MailHandler:
 
         for email_addr, mails in result_dict.items():
             processor = get_processor(email_addr)
-            if not processor:
-                print(f"未找到对应的邮箱处理策略，邮箱地址: {email_addr}")
-                continue
 
             for mail in mails:
+                if not processor:
+                    mail_context.skip_mail(
+                        mail.subject,
+                        "未找到对应的邮箱处理策略",
+                        mail.from_addr,
+                    )
+                    continue
+
                 # 过滤已处理过的邮件
                 if MailState().mail_exists(mail):
                     continue
