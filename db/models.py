@@ -18,23 +18,29 @@ class MailState(Base):
     __tablename__ = "mail_state"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+
     created_time: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+
     subject: Mapped[str] = mapped_column(
-        String(256), nullable=False, index=True
-    )  # 邮件主题，索引加速查询
+        String(256), nullable=False, index=True, comment="邮件标题"
+    )
+
     state: Mapped[MailStateEnum] = mapped_column(
         Enum(MailStateEnum, name="mail_state_enum"),
         default=MailStateEnum.UNPROCESSED,
         nullable=False,
+        comment="邮件处理状态",
     )
+
     sheet_name: Mapped[str] = mapped_column(
-        String(64), nullable=False, index=True
-    )  # 工作表名称，索引加速查询
+        String(64), nullable=False, index=True, comment="excel 工作簿"
+    )
+
     mail_hash: Mapped[str] = mapped_column(
-        String(64), unique=True, index=True
-    )  # 哈希值，唯一且加索引
+        String(64), unique=True, index=True, comment="标题与发送时间组合的哈希值"
+    )
 
     @with_session
     def update_mail_state(
