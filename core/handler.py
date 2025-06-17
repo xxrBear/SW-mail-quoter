@@ -125,10 +125,21 @@ class ExcelHandler:
 
         if "异常结构" not in sheet_names:
             sheet = wb.sheets.add(name="异常结构", before="8080结构")
-            wb.save()
+            cls.create_struct_exception_sheet(sheet)
         else:
             sheet = wb.sheets["异常结构"]
+            cls.delete_struct_exception_sheet_row(sheet)
 
+        for num, mail in enumerate(mail_context.email, 2):
+            sheet.range(f"A{num}").value = mail.get("subject")
+            sheet.range(f"B{num}").value = mail.get("reason")
+            sheet.range(f"C{num}").value = mail.get("sent_addr")
+
+        wb.save()
+
+    @classmethod
+    def create_struct_exception_sheet(cls, sheet: xw.Sheet) -> None:
+        """创建 异常结构 Sheet"""
         sheet.range("A1").value = "邮件主题"
         sheet.range("B1").value = "失败原因"
         sheet.range("C1").value = "发件人"
@@ -146,9 +157,7 @@ class ExcelHandler:
         # 表格颜色
         sheet.api.Tab.Color = 255  # 红色
 
-        for num, mail in enumerate(mail_context.email, 2):
-            sheet.range(f"A{num}").value = mail.get("subject")
-            sheet.range(f"B{num}").value = mail.get("reason")
-            sheet.range(f"C{num}").value = mail.get("sent_addr")
-
-        wb.save()
+    @classmethod
+    def delete_struct_exception_sheet_row(cls, sheet: xw.Sheet) -> None:
+        # 删除前 100 行
+        sheet.api.Rows("2:101").Delete()
