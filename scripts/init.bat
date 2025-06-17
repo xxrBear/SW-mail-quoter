@@ -1,11 +1,12 @@
 @echo off
 REM ================================================
 REM Windows 批处理脚本：安装 uv（若未安装）并执行 uv sync
+REM 然后仅在上一层目录没有 .env 时才创建 .env
 REM ================================================
 
-REM 设置终端为 UTF-8 编码
 chcp 65001
 
+REM -----------------------------------------------
 REM 检查 uv 是否已安装
 where uv >nul 2>nul
 
@@ -35,24 +36,23 @@ uv sync
 echo.
 echo uv sync 执行完成！
 echo ================================================
-@REM pause
 
-echo 正在写入 .env 到上一层目录...
+REM -----------------------------------------------
+REM 记录批处理所在目录的上一级目录
+for %%i in ("%~dp0..") do set "PARENT_DIR=%%~fi"
 
-REM %~dp0 是当前批处理所在的绝对路径
-REM 用 for 循环解析真正的绝对上层目录
-for %%i in ("%~dp0..") do set PARENT_DIR=%%~fi
+REM 检查 .env 是否存在
+if exist "%PARENT_DIR%\.env" (
+    echo 已检测到上一层目录已存在 .env 文件，跳过创建。
+) else (
+    echo 上一层目录未发现 .env 文件，正在创建...
 
-REM 检查
-echo 上层目录: %PARENT_DIR%
+    echo EMAIL_SMTP_SERVER='' > "%PARENT_DIR%\.env"
+    echo EMAIL_USER_NAME='' >> "%PARENT_DIR%\.env"
+    echo EMAIL_USER_PASS='' >> "%PARENT_DIR%\.env"
 
-REM 写入文件
-echo EMAIL_SMTP_SERVER='' > "%PARENT_DIR%\.env"
-echo EMAIL_USER_NAME='' >> "%PARENT_DIR%\.env"
-echo EMAIL_USER_PASS='' >> "%PARENT_DIR%\.env"
-
-echo.
-echo 已在上一层目录生成 .env 文件，内容如下：
-type "%PARENT_DIR%\.env"echo 正在写入 .env 到上一层目录...
+    echo 已成功在上一层目录生成 .env 文件，内容如下：
+    type "%PARENT_DIR%\.env"
+)
 
 pause
