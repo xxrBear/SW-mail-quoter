@@ -28,6 +28,7 @@ class MailHandler:
 
         # 处理未报价邮件并回复
         mail_state = MailState()
+        excel_handler = ExcelHandler()
         for eamil_addr, result_list in filter_dict.items():
             print_banner("开始处理可报价邮件......")
             processor = get_processor(eamil_addr)  # 获取每个客户对应的邮件处理策略
@@ -38,15 +39,15 @@ class MailHandler:
                 # 处理 Excel 对应 Sheet
                 sheet_name_count = mail_state.count_today_sheet_names(mail)
                 if not sheet_name_count:
-                    ExcelHandler.clear_sheet_columns(wb, mail.sheet_name)
-                ExcelHandler.copy_sheet_columns(wb, mail.sheet_name, sheet_name_count)
+                    excel_handler.clear_sheet_columns(wb, mail.sheet_name)
+                excel_handler.copy_sheet_columns(wb, mail.sheet_name, sheet_name_count)
 
                 # 获取报价值，并写入待发送邮件内容中
                 quote_value = processor.process_excel(mail, wb, sheet_name_count)
                 processed_mail = processor.process_mail_html(mail, quote_value)
 
                 # 回复邮件
-                mail_client.reply_mail(processed_mail)
+                # mail_client.reply_mail(processed_mail)
 
                 # 写入数据库
                 mail_state.create_mail_state(processed_mail, MailStateEnum.PROCESSED)
@@ -54,7 +55,7 @@ class MailHandler:
 
         # 处理异常邮件，写入 Excel
         try:
-            ExcelHandler.process_abnormal_mails_sheet(wb)
+            excel_handler.process_abnormal_mails_sheet(wb)
         except Exception as e:
             print(f"写入异常结构报错: {e}")
 
@@ -91,16 +92,18 @@ class MailHandler:
 
 
 class ExcelHandler:
-    @classmethod
-    def clear_sheet_columns(cls, wb: xw.Book, sheet_name: str) -> None:
+    """
+    定义 Excel 处理类，处理公共规则
+    """
+
+    def clear_sheet_columns(self, wb: xw.Book, sheet_name: str) -> None:
         """首次处理时，清空对应表格的列"""
         sheet = wb.sheets[sheet_name]
         sheet.range("C:Z").delete()  # 清除值、格式、批注等
         wb.save()
 
-    @classmethod
     def copy_sheet_columns(
-        cls, wb: xw.Book, sheet_name: str, sheet_name_count: int
+        self, wb: xw.Book, sheet_name: str, sheet_name_count: int
     ) -> None:
         """复制工作表的列"""
         sheet = wb.sheets[sheet_name]
@@ -123,18 +126,17 @@ class ExcelHandler:
             sheet.api.Application.CutCopyMode = True
             wb.save()
 
-    @classmethod
-    def process_abnormal_mails_sheet(cls, wb: xw.Book):
+    def process_abnormal_mails_sheet(self, wb: xw.Book):
         print_banner("开始处理异常邮件.....")
 
         sheet_names = [i.name for i in wb.sheets]
 
         if "异常结构" not in sheet_names:
             sheet = wb.sheets.add(name="异常结构", before="8080结构")
-            cls.create_struct_exception_sheet(sheet)
+            self.create_struct_exception_sheet(sheet)
         else:
             sheet = wb.sheets["异常结构"]
-            cls.delete_struct_exception_sheet_row(sheet)
+            self.delete_struct_exception_sheet_row(sheet)
 
         for num, mail in enumerate(mail_context.email, 2):
             sheet.range(f"A{num}").value = mail.get("subject")
@@ -143,8 +145,7 @@ class ExcelHandler:
 
         wb.save()
 
-    @classmethod
-    def create_struct_exception_sheet(cls, sheet: xw.Sheet) -> None:
+    def create_struct_exception_sheet(self, sheet: xw.Sheet) -> None:
         """创建 异常结构 Sheet"""
         sheet.range("A1").value = "邮件主题"
         sheet.range("B1").value = "失败原因"
@@ -163,8 +164,7 @@ class ExcelHandler:
         # 表格颜色
         sheet.api.Tab.Color = 255  # 红色
 
-    @classmethod
-    def delete_struct_exception_sheet_row(cls, sheet: xw.Sheet) -> None:
+    def delete_struct_exception_sheet_row(self, sheet: xw.Sheet) -> None:
         """删除 '异常结构' Sheet的 2-101 行"""
         # 删除前 100 行
         sheet.api.Rows("2:101").Delete()
