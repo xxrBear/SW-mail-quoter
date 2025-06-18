@@ -13,9 +13,5 @@ class ProcessorStrategy(ABC):
         pass
 
     @abstractmethod
-    def get_excel_processing_rules(self):
-        pass
-
-    @abstractmethod
     def cannot_quote(self) -> bool:
         pass

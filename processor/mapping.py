@@ -1,52 +1,63 @@
 import re
 
+
+class BaseHandler:
+    def __init__(self, quote_name: str, quote_line: int):
+        self.quote_name = quote_name  # 报价字段名称
+        self.quote_line = quote_line  # 报价段所对应 sheet 的行
+
+
 # --------------------------------------------------------------------------------------------------
 # 广发银行
 # --------------------------------------------------------------------------------------------------
 
-# 指定报价字段
-CBG_QUOTE_FIELD_MAPPING = {"看涨阶梯": "行权价格1（低）", "二元看涨": "行权价格"}
+
+class CBGBullLadderHandler(BaseHandler):
+    """广发银行看涨阶梯处理类"""
+
+    @property
+    def fields_rule_dict(self) -> dict:
+        return {
+            "挂钩标的合约": (
+                "3",
+                lambda v: re.findall(r"[（(](.*?)[）)]", v)[0].replace(".", "").upper(),
+            ),
+            "产品启动日": ("4", str),
+            "交割日（双方资金清算日）": ("5", str),
+            "最低收益率（年化）": ("9", str),
+            "中间收益率（年化）": ("10", str),
+            "最高收益率（年化）": ("11", str),
+            "行权价格2（高）": ("22", lambda v: v.replace("*", "")),
+            "期权费（年化）": ("8", str),
+        }
 
 
-# 看涨阶梯对应 excel 表格的映射关系
-CBG_BULL_LADDER_TUPLE = (
-    "23",
-    {
-        "挂钩标的合约": (
-            "3",
-            lambda v: re.findall(r"[（(](.*?)[）)]", v)[0].replace(".", "").upper(),
-        ),
-        "产品启动日": ("4", str),
-        "交割日（双方资金清算日）": ("5", str),
-        "最低收益率（年化）": ("9", str),
-        "中间收益率（年化）": ("10", str),
-        "最高收益率（年化）": ("11", str),
-        "行权价格2（高）": ("22", lambda v: v.replace("*", "")),
-        "期权费（年化）": ("8", str),
-    },
-)
+class CBGBinarryCallHandler(BaseHandler):
+    """广发银行二元看涨处理类"""
 
-# 二元看涨
-CBG_BINARRY_CALL_TUPLE = (
-    "19",
-    {
-        "挂钩标的合约": (
-            "3",
-            lambda v: re.findall(r"[（(](.*?)[）)]", v)[0].replace(".", "").upper(),
-        ),
-        "产品启动日": ("4", str),
-        "交割日（双方资金清算日）": ("5", str),
-        "最低收益率（年化）": ("9", str),
-        "最高收益率（年化）": ("11", str),
-        "期权费 （年化）": ("8", str),
-    },
-)
+    @property
+    def fields_rule_dict(self) -> dict:
+        return {
+            "挂钩标的合约": (
+                "3",
+                lambda v: re.findall(r"[（(](.*?)[）)]", v)[0].replace(".", "").upper(),
+            ),
+            "产品启动日": ("4", str),
+            "交割日（双方资金清算日）": ("5", str),
+            "最低收益率（年化）": ("9", str),
+            "最高收益率（年化）": ("11", str),
+            "期权费 （年化）": ("8", str),
+        }
 
-# 不同表格名称对应不同处理样式的规则
-CBG_EXCEL_PROCESSING_RULES_MAPPING = {
-    "看涨阶梯": CBG_BULL_LADDER_TUPLE,
-    "二元看涨": CBG_BINARRY_CALL_TUPLE,
+
+CBG_SHEET_HANDLER = {
+    "看涨阶梯": CBGBullLadderHandler("行权价格1（低）", 23),
+    "二元看涨": CBGBinarryCallHandler("行权价格", 19),
 }
+
+
+def get_sheet_handler(sheet_name: str) -> BaseHandler:
+    return CBG_SHEET_HANDLER.get(sheet_name)
 
 
 # --------------------------------------------------------------------------------------------------

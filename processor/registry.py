@@ -1,5 +1,5 @@
 from processor.base import ProcessorStrategy
-from processor.customer.cbg import CustomerCBGProcessor
+from processor.impl.cbg import CustomerCBGProcessor
 
 # 邮箱后缀与处理策略类的映射，只保存了一个实例(类似单例模式)
 processor_map = {
