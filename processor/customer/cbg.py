@@ -81,11 +81,11 @@ class CustomerCBGProcessor(ProcessorStrategy):
 
     def cannot_quote(self, mail: EachMail) -> bool:
         """
-        判断邮件中是否是不满足报价条件
+        判断邮件中是否不满足报价条件
 
-        不能报价的逻辑所需条件：
+        不能报价的邮件所需条件：
         - 所有字段值都非空
-        - 或需报价字段与系统记录不一致
+        - 或需报价字段与系统配置的不一致
 
         :param df_dict: 邮件中提取的表格数据（字典格式）
         :param sheet_name: 表格名称，用于获取需报价字段
@@ -109,7 +109,7 @@ class CustomerCBGProcessor(ProcessorStrategy):
 
     def get_quoted_field(self, sheet_name: str) -> str:
         """
-        获取需要报价的字段
+        获取配置的需要报价的字段
         :param sheet_name: 工作表名称
         :return: 需要报价的字段名称
         """

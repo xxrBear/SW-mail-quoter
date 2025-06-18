@@ -43,7 +43,7 @@ class MailState(Base):
     )
 
     @with_session
-    def update_mail_state(
+    def create_mail_state(
         session: SessionLocal, self, mail: EachMail, state: MailStateEnum
     ) -> None:
         """将处理结果写入数据库"""
