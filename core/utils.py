@@ -37,3 +37,19 @@ def add_excel_subject_cell(wb: xw.Book, mail: EachMail, next_letter: str) -> Non
         sheet.range(f"A{next_row}").value = "邮件标题"
     sheet.range(f"{next_letter}{next_row}").value = mail.subject
     wb.save()
+
+
+def get_rate(value: float) -> float:
+    """
+    根据输入值，返回对应区间的利率（百分比）
+
+    """
+    thresholds = [0.12, 0.24, 0.36, 0.72, 10000]
+    rates = ["17.00%", "16.50%", "16.30%", "16.00%", "15.50%"]
+
+    for threshold, rate in zip(thresholds, rates):
+        if value <= threshold:
+            return rate
+
+    # 如果大于最大阈值，默认返回最低利率
+    return rates[-1]

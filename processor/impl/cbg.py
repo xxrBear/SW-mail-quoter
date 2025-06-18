@@ -2,7 +2,7 @@ import xlwings as xw
 from bs4 import BeautifulSoup
 
 from core.schemas import EachMail
-from core.utils import add_excel_subject_cell, calc_next_letter
+from core.utils import add_excel_subject_cell, calc_next_letter, get_rate
 from processor.base import ProcessorStrategy
 from processor.mapping import get_sheet_handler
 
@@ -33,11 +33,17 @@ class CustomerCBGProcessor(ProcessorStrategy):
                     finally_cell = next_letter + str(cell)
                     sheet.range(finally_cell).value = apply_method(value)
 
-            # 获取需报价字段
+            # 交易日
+            trade_date = next_letter + "14"
+            print(sheet.range(trade_date).value)
+            rate = get_rate(float(sheet.range(trade_date).value))
+            print(rate)
+
+            # 获取需报价字段所在位置并写入
             finally_target = next_letter + str(sheet_mapping_handler.quote_line)
             quote_value = sheet.range(finally_target).value
 
-            # Excel 中添加邮件主题
+            # 每个表格底部添加邮件主题
             add_excel_subject_cell(wb, mail, next_letter)
 
         except Exception as e:

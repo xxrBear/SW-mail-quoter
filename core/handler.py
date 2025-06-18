@@ -48,10 +48,10 @@ class MailHandler:
 
                 # 回复邮件
                 mail_client.reply_mail(processed_mail)
+                print(f"已回复邮件: {processed_mail.subject} 来自: {eamil_addr} \n ")
 
                 # 写入数据库
                 mail_state.create_mail_state(processed_mail, MailStateEnum.PROCESSED)
-                print(f"已回复邮件: {processed_mail.subject} 来自: {eamil_addr} \n ")
 
         # 处理异常邮件，写入 Excel
         try:
@@ -166,5 +166,4 @@ class ExcelHandler:
 
     def delete_struct_exception_sheet_row(self, sheet: xw.Sheet) -> None:
         """删除 '异常结构' Sheet的 2-101 行"""
-        # 删除前 100 行
         sheet.api.Rows("2:101").Delete()
