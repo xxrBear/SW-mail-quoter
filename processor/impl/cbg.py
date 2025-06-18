@@ -2,7 +2,12 @@ import xlwings as xw
 from bs4 import BeautifulSoup
 
 from core.schemas import EachMail
-from core.utils import add_excel_subject_cell, calc_next_letter, get_rate
+from core.utils import (
+    add_excel_subject_cell,
+    calc_next_letter,
+    get_rate,
+    get_risk_free_rate,
+)
 from processor.base import ProcessorStrategy
 from processor.mapping import get_sheet_handler
 
@@ -33,11 +38,20 @@ class CustomerCBGProcessor(ProcessorStrategy):
                     finally_cell = next_letter + str(cell)
                     sheet.range(finally_cell).value = apply_method(value)
 
+            other_dict = sheet_mapping_handler.other_dict
             # 交易日
-            trade_date = next_letter + "14"
-            print(sheet.range(trade_date).value)
-            rate = get_rate(float(sheet.range(trade_date).value))
-            print(rate)
+            trade_date = float(
+                sheet.range(next_letter + other_dict.get("交易日")).value
+            )
+            # Vol
+            rate = get_rate(trade_date)
+            sheet.range(next_letter + other_dict.get("VOL")).value = rate
+
+            # 标的合约
+            underlying = sheet.range(next_letter + other_dict.get("标的合约")).value
+            # 无风险利率
+            r = get_risk_free_rate(underlying)
+            sheet.range(next_letter + other_dict.get("无风险利率")).value = r
 
             # 获取需报价字段所在位置并写入
             finally_target = next_letter + str(sheet_mapping_handler.quote_line)

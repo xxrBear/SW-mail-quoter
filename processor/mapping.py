@@ -31,6 +31,10 @@ class CBGBullLadderHandler(BaseHandler):
             "期权费（年化）": ("8", str),
         }
 
+    @property
+    def other_dict(self) -> dict:
+        return {"交易日": "14", "VOL": "12", "标的合约": "3", "无风险利率": "17"}
+
 
 class CBGBinarryCallHandler(BaseHandler):
     """广发银行二元看涨处理类"""
@@ -48,6 +52,10 @@ class CBGBinarryCallHandler(BaseHandler):
             "最高收益率（年化）": ("11", str),
             "期权费 （年化）": ("8", str),
         }
+
+    @property
+    def other_dict(self) -> dict:
+        return {"交易日": "13", "VOL": "11", "标的合约": "3", "无风险利率": "16"}
 
 
 CBG_SHEET_HANDLER = {

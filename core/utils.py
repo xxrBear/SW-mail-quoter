@@ -53,3 +53,11 @@ def get_rate(value: float) -> float:
 
     # 如果大于最大阈值，默认返回最低利率
     return rates[-1]
+
+
+def get_risk_free_rate(underlying: str):
+    if underlying.startswith("AU"):
+        r = "2.4%"
+    else:
+        r = "4.5%"
+    return r
