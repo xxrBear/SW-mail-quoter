@@ -27,6 +27,10 @@ class MailState(Base):
         String(256), nullable=False, index=True, comment="邮件标题"
     )
 
+    from_addr: Mapped[str] = mapped_column(
+        String(256), nullable=False, comment="发件人", index=True
+    )
+
     state: Mapped[MailStateEnum] = mapped_column(
         Enum(MailStateEnum, name="mail_state_enum"),
         default=MailStateEnum.UNPROCESSED,
@@ -60,6 +64,7 @@ class MailState(Base):
                 sheet_name=mail.sheet_name,
                 state=MailStateEnum.PROCESSED,
                 subject=mail.subject,
+                from_addr=mail.from_addr,
             )
             session.add(mail_obj)
         session.commit()
@@ -95,4 +100,4 @@ class MailState(Base):
             MailState.state == MailStateEnum.PROCESSED,
             MailState.created_time >= date.today(),
         )
-        return [[m.subject, m.subject] for m in mails]
+        return [[m.subject, m.from_addr] for m in mails]
