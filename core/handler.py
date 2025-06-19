@@ -1,4 +1,5 @@
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date
 from typing import Dict, List
 
@@ -29,6 +30,8 @@ class MailHandler:
         # 处理未报价邮件并回复
         mail_state = MailState()
         excel_handler = ExcelHandler()
+
+        pending_emails = []
         for eamil_addr, result_list in filter_dict.items():
             print_banner("开始处理可报价邮件......")
             processor = get_processor(eamil_addr)  # 获取每个客户对应的邮件处理策略
@@ -50,14 +53,29 @@ class MailHandler:
                 processed_mail = processor.process_mail_html(mail, quote_value)
 
                 # 回复邮件
-                mail_client.reply_mail(processed_mail)
-                print(f"已回复邮件: {processed_mail.subject} 来自: {eamil_addr} \n ")
+                pending_emails.append(processed_mail)
+                # mail_client.reply_mail(processed_mail)
+                # print(f"已回复邮件: {processed_mail.subject} 来自: {eamil_addr} \n ")
 
                 # 写入数据库
                 try:
                     mail_state.update_or_create_record(processed_mail)
                 except Exception as e:
                     print(f"写入数据库出错: {e}")
+
+        # 使用多线程发送邮件
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            futures = [
+                executor.submit(mail_client.reply_mail, p) for p in pending_emails
+            ]
+            for f in as_completed(futures):
+                try:
+                    f.result()
+                    print(
+                        f"已回复邮件: {processed_mail.subject} 来自: {eamil_addr} \n "
+                    )
+                except Exception as e:
+                    print(f"发送失败: {e}")
 
         # 处理异常邮件，写入 Excel
         try:
