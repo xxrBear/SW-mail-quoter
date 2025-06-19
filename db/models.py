@@ -43,19 +43,25 @@ class MailState(Base):
     )
 
     @with_session
-    def create_mail_state(
-        session: SessionLocal, self, mail: EachMail, state: MailStateEnum
-    ) -> None:
-        """将处理结果写入数据库"""
+    def update_or_create_record(session: SessionLocal, self, mail: EachMail) -> None:
+        """将处理结果更新或写入数据库"""
         mail_hash = get_mail_hash(mail)
-        mail_state = MailState(
-            mail_hash=mail_hash,
-            sheet_name=mail.sheet_name,
-            state=state,
-            subject=mail.subject,
+        mail_obj = (
+            session.query(MailState)
+            .filter_by(mail_hash=mail_hash, state=MailStateEnum.MANUAL)
+            .one_or_none()
         )
 
-        session.add(mail_state)
+        if mail_obj:
+            mail_obj.state = MailStateEnum.PROCESSED
+        else:
+            mail_obj = MailState(
+                mail_hash=mail_hash,
+                sheet_name=mail.sheet_name,
+                state=MailStateEnum.PROCESSED,
+                subject=mail.subject,
+            )
+            session.add(mail_obj)
         session.commit()
 
     @with_session
@@ -82,3 +88,11 @@ class MailState(Base):
         )
 
         return mail_count
+
+    @with_session
+    def get_successful_mail_info(session: SessionLocal, self) -> list:
+        mails = session.query(MailState).filter(
+            MailState.state == MailStateEnum.PROCESSED,
+            MailState.created_time >= date.today(),
+        )
+        return [[m.subject, m.subject] for m in mails]

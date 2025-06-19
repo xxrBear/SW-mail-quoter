@@ -8,7 +8,7 @@ from core.client import mail_client
 from core.context import mail_context
 from core.schemas import EachMail
 from core.utils import calc_next_letter, print_banner
-from db.models import MailState, MailStateEnum
+from db.models import MailState
 from processor.registry import get_processor
 
 
@@ -33,13 +33,16 @@ class MailHandler:
             print_banner("开始处理可报价邮件......")
             processor = get_processor(eamil_addr)  # 获取每个客户对应的邮件处理策略
 
+            # 有可报价邮件，清空 Sheet 行
+            sheet_set = set([i.sheet_name for i in result_list])
+            for _sheet_name in sheet_set:
+                excel_handler.clear_sheet_columns(wb, _sheet_name)
+
             for mail in result_list:
                 print(f"处理邮件: {mail.subject} 来自: {eamil_addr}")
 
                 # 处理 Excel 对应 Sheet
                 sheet_name_count = mail_state.count_today_sheet_names(mail)
-                if not sheet_name_count:
-                    excel_handler.clear_sheet_columns(wb, mail.sheet_name)
                 excel_handler.copy_sheet_columns(wb, mail.sheet_name, sheet_name_count)
 
                 # 获取报价值，并写入待发送邮件内容中
@@ -52,9 +55,7 @@ class MailHandler:
 
                 # 写入数据库
                 try:
-                    mail_state.create_mail_state(
-                        processed_mail, MailStateEnum.PROCESSED
-                    )
+                    mail_state.update_or_create_record(processed_mail)
                 except Exception as e:
                     print(f"写入数据库出错: {e}")
 
@@ -62,7 +63,13 @@ class MailHandler:
         try:
             excel_handler.process_abnormal_mails_sheet(wb)
         except Exception as e:
-            print(f"写入异常结构报错: {e}")
+            print(f"写入今日报价异常报错: {e}")
+
+        # 今日成功报价数据写入 Excel
+        try:
+            excel_handler.process_successful_mails_sheet(wb)
+        except Exception as e:
+            print(f"写入今日成功报价报错：{e}")
 
     def filter_unquotable_result_dict(
         self, result_dict: Dict[str, List[EachMail]]
@@ -131,20 +138,28 @@ class ExcelHandler:
             sheet.api.Application.CutCopyMode = True
             wb.save()
 
-    def ensure_abnormal_sheet_exists(self, wb: xw.Sheet):
-        """确保 异常结构 Sheet 存在，如果不存在就创建"""
-        if "异常结构" not in [s.name for s in wb.sheets]:
-            sheet = wb.sheets.add(name="异常结构", before="8080结构")
-            self._init_abnormal_sheet_header(sheet)
+    def ensure_sheet_exists(self, wb: xw.Sheet, sheet_name: str):
+        """确保 sheet_name Sheet 存在，如果不存在就创建"""
+        if sheet_name not in [s.name for s in wb.sheets]:
+            sheet = wb.sheets.add(name=sheet_name, before="8080结构")
+            self._init_sheet_header(sheet)
         else:
-            sheet = wb.sheets["异常结构"]
+            sheet = wb.sheets[sheet_name]
         return sheet
 
-    def _init_abnormal_sheet_header(self, sheet: xw.Sheet):
-        """设置 异常结构 Sheet 表头和样式"""
-        sheet.range("A1").value = "邮件主题"
-        sheet.range("B1").value = "失败原因"
-        sheet.range("C1").value = "发件人"
+    def _init_sheet_header(self, sheet: xw.Sheet):
+        """设置Sheet 表头和样式"""
+        if "失败" in sheet.name:
+            sheet.range("A1").value = "邮件主题"
+            sheet.range("B1").value = "失败原因"
+            sheet.range("C1").value = "发件人"
+            # 表格颜色
+            sheet.api.Tab.Color = 255  # 红色
+        else:
+            sheet.range("A1").value = "邮件主题"
+            sheet.range("B1").value = "发件人"
+            # 表格颜色
+            sheet.api.Tab.Color = 65280  # 绿色
 
         # 定位表头范围
         header_range = sheet.range("A1").expand("right")
@@ -156,11 +171,9 @@ class ExcelHandler:
         header_range.columns.autofit()
         header_range.column_width = 80  # 表头宽度
         header_range.row_height = 30  # 表头高度
-        # 表格颜色
-        sheet.api.Tab.Color = 255  # 红色
 
-    def clear_abnormal_sheet_content(self, sheet: xw.Sheet):
-        """清空异常结构 Sheet 表头以下所有内容"""
+    def clear_sheet_content(self, sheet: xw.Sheet):
+        """清空指定 Sheet 表头以下所有内容"""
         used_range = sheet.used_range
         if used_range.rows.count > 1:
             # 清空 A2:最后一行最后一列
@@ -169,7 +182,7 @@ class ExcelHandler:
 
     def write_abnormal_mails(self, sheet: xw.Sheet):
         """把上下文中的异常邮件批量写入 Sheet"""
-        print_banner("开始写入异常邮件……")
+        print_banner("开始写入报价失败的邮件数据...")
 
         if not mail_context.email:
             return
@@ -181,9 +194,22 @@ class ExcelHandler:
         # 从 A2 开始批量写值
         sheet.range("A2").value = data
 
+    def write_today_successful_mails(self, sheet: xw.Sheet):
+        print_banner("开始写入报价成功的邮件数据...")
+
+        mail_state = MailState()
+        result = mail_state.get_successful_mail_info()
+        sheet.range("A2").value = result
+
     def process_abnormal_mails_sheet(self, wb: xw.Book):
         """处理异常邮件的 sheet"""
-        sheet = self.ensure_abnormal_sheet_exists(wb)
-        self.clear_abnormal_sheet_content(sheet)
+        sheet = self.ensure_sheet_exists(wb, "今日失败报价")
+        self.clear_sheet_content(sheet)
         self.write_abnormal_mails(sheet)
+        wb.save()
+
+    def process_successful_mails_sheet(self, wb: xw.Book):
+        sheet = self.ensure_sheet_exists(wb, "今日成功报价")
+        self.clear_sheet_content(sheet)
+        self.write_today_successful_mails(sheet)
         wb.save()
