@@ -47,11 +47,16 @@ class MailHandler:
                 processed_mail = processor.process_mail_html(mail, quote_value)
 
                 # 回复邮件
-                mail_client.reply_mail(processed_mail)
+                # mail_client.reply_mail(processed_mail)
                 print(f"已回复邮件: {processed_mail.subject} 来自: {eamil_addr} \n ")
 
                 # 写入数据库
-                mail_state.create_mail_state(processed_mail, MailStateEnum.PROCESSED)
+                try:
+                    mail_state.create_mail_state(
+                        processed_mail, MailStateEnum.PROCESSED
+                    )
+                except Exception as e:
+                    print(f"写入数据库出错: {e}")
 
         # 处理异常邮件，写入 Excel
         try:
@@ -75,12 +80,12 @@ class MailHandler:
                     self.skip(mail, "未找到对应的邮箱处理策略")
                     continue
 
-                if mail_state.mail_exists(mail):
-                    continue
-
                 # 处理不满足报价条件的邮件
                 if processor.cannot_quote(mail):
                     self.skip(mail, "当前邮件不满足报价条件，跳过邮件")
+                    continue
+
+                if mail_state.mail_exists(mail):
                     continue
 
                 filtered_dict[email_addr].append(mail)
@@ -93,7 +98,7 @@ class MailHandler:
 
 class ExcelHandler:
     """
-    定义 Excel 处理类，处理公共规则
+    Excel 公共规则处理类
     """
 
     def clear_sheet_columns(self, wb: xw.Book, sheet_name: str) -> None:
@@ -126,27 +131,17 @@ class ExcelHandler:
             sheet.api.Application.CutCopyMode = True
             wb.save()
 
-    def process_abnormal_mails_sheet(self, wb: xw.Book):
-        print_banner("开始处理异常邮件.....")
-
-        sheet_names = [i.name for i in wb.sheets]
-
-        if "异常结构" not in sheet_names:
+    def ensure_abnormal_sheet_exists(self, wb: xw.Sheet):
+        """确保 异常结构 Sheet 存在，如果不存在就创建"""
+        if "异常结构" not in [s.name for s in wb.sheets]:
             sheet = wb.sheets.add(name="异常结构", before="8080结构")
-            self.create_struct_exception_sheet(sheet)
+            self._init_abnormal_sheet_header(sheet)
         else:
             sheet = wb.sheets["异常结构"]
-            self.delete_struct_exception_sheet_row(sheet)
+        return sheet
 
-        for num, mail in enumerate(mail_context.email, 2):
-            sheet.range(f"A{num}").value = mail.get("subject")
-            sheet.range(f"B{num}").value = mail.get("reason")
-            sheet.range(f"C{num}").value = mail.get("sent_addr")
-
-        wb.save()
-
-    def create_struct_exception_sheet(self, sheet: xw.Sheet) -> None:
-        """创建 异常结构 Sheet"""
+    def _init_abnormal_sheet_header(self, sheet: xw.Sheet):
+        """设置 异常结构 Sheet 表头和样式"""
         sheet.range("A1").value = "邮件主题"
         sheet.range("B1").value = "失败原因"
         sheet.range("C1").value = "发件人"
@@ -164,6 +159,31 @@ class ExcelHandler:
         # 表格颜色
         sheet.api.Tab.Color = 255  # 红色
 
-    def delete_struct_exception_sheet_row(self, sheet: xw.Sheet) -> None:
-        """删除 '异常结构' Sheet的 2-101 行"""
-        sheet.api.Rows("2:101").Delete()
+    def clear_abnormal_sheet_content(self, sheet: xw.Sheet):
+        """清空异常结构 Sheet 表头以下所有内容"""
+        used_range = sheet.used_range
+        if used_range.rows.count > 1:
+            # 清空 A2:最后一行最后一列
+            last_cell = used_range.end("down").end("right")
+            sheet.range(f"A2:{last_cell.address}").clear()
+
+    def write_abnormal_mails(self, sheet: xw.Sheet):
+        """把上下文中的异常邮件批量写入 Sheet"""
+        print_banner("开始写入异常邮件……")
+
+        if not mail_context.email:
+            return
+
+        data = [
+            [mail.get("subject"), mail.get("reason"), mail.get("sent_addr")]
+            for mail in mail_context.email
+        ]
+        # 从 A2 开始批量写值
+        sheet.range("A2").value = data
+
+    def process_abnormal_mails_sheet(self, wb: xw.Book):
+        """处理异常邮件的 sheet"""
+        sheet = self.ensure_abnormal_sheet_exists(wb)
+        self.clear_abnormal_sheet_content(sheet)
+        self.write_abnormal_mails(sheet)
+        wb.save()
