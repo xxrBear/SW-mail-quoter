@@ -26,29 +26,32 @@ class CustomerCBGProcessor(ProcessorStrategy):
         try:
             sheet = wb.sheets[mail.sheet_name]
 
+            # 对应邮件中的数据
             sheet_mapping_handler = get_sheet_handler(mail.sheet_name)
+            # Excel 待处理字段
+            fields_to_update = sheet_mapping_handler.fields_rule_dict
 
             # 将指定邮件内容写入 Excel
             next_letter = calc_next_letter("C", sheet_name_count)
             for header, value in mail.df_dict.items():
-                fields_to_update = sheet_mapping_handler.fields_rule_dict
-
                 if fields_to_update.get(header):
                     cell, apply_method = fields_to_update[header]
                     finally_cell = next_letter + str(cell)
                     sheet.range(finally_cell).value = apply_method(value)
 
+            # 处理 Excel 中的数据
             other_dict = sheet_mapping_handler.other_dict
+            # 标的合约
+            underlying = sheet.range(next_letter + other_dict.get("标的合约")).value
+
             # 交易日
             trade_date = float(
                 sheet.range(next_letter + other_dict.get("交易日")).value
             )
             # Vol
-            rate = get_rate(trade_date)
+            rate = get_rate(underlying, trade_date)
             sheet.range(next_letter + other_dict.get("VOL")).value = rate
 
-            # 标的合约
-            underlying = sheet.range(next_letter + other_dict.get("标的合约")).value
             # 无风险利率
             r = get_risk_free_rate(underlying)
             sheet.range(next_letter + other_dict.get("无风险利率")).value = r

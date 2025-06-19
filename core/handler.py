@@ -47,7 +47,7 @@ class MailHandler:
                 processed_mail = processor.process_mail_html(mail, quote_value)
 
                 # 回复邮件
-                # mail_client.reply_mail(processed_mail)
+                mail_client.reply_mail(processed_mail)
                 print(f"已回复邮件: {processed_mail.subject} 来自: {eamil_addr} \n ")
 
                 # 写入数据库
