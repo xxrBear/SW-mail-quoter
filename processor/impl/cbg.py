@@ -13,9 +13,7 @@ from processor.mapping import get_sheet_handler
 
 
 class CustomerCBGProcessor(ProcessorStrategy):
-    def process_excel(
-        self, mail: EachMail, wb: xw.Book, sheet_name_count: int
-    ) -> float:
+    def process_excel(self, mail: EachMail, wb: xw.Book, sheet_name_count: int) -> str:
         """
         操作 Excel 文件，获取指定表格中的值
         :param mail: EachMail 对象
@@ -66,9 +64,9 @@ class CustomerCBGProcessor(ProcessorStrategy):
         except Exception as e:
             print("操作 Excel 失败：", e)
 
-        return quote_value
+        return str(quote_value)
 
-    def process_mail_html(self, mail: EachMail, quote_value: float):
+    def process_mail_html(self, mail: EachMail, quote_value: str):
         """
         处理邮件 HTML 内容
         :param mail: EachMail 对象

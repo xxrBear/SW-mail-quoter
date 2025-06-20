@@ -124,7 +124,7 @@ def parse_attachments(part: Message) -> list:
                     "content_type": part.get_content_type(),
                     "size": len(content),
                     # 使用 base64 编码附件内容
-                    "data": base64.b64encode(content).decode("ascii"),
+                    "data": base64.b64encode(content).decode("ascii"),  # type: ignore
                 }
             )
     return attachments

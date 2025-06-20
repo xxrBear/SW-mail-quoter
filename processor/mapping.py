@@ -1,5 +1,4 @@
 import re
-from typing import Optional
 
 
 class BaseHandler:
@@ -65,8 +64,11 @@ CBG_SHEET_HANDLER = {
 }
 
 
-def get_sheet_handler(sheet_name: str) -> Optional[BaseHandler]:
-    return CBG_SHEET_HANDLER.get(sheet_name)
+def get_sheet_handler(sheet_name: str) -> BaseHandler:
+    if not CBG_SHEET_HANDLER.get(sheet_name):
+        raise ValueError("不存在处理者")
+    else:
+        return CBG_SHEET_HANDLER.get(sheet_name)
 
 
 # --------------------------------------------------------------------------------------------------

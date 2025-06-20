@@ -1,26 +1,28 @@
-from typing import Optional, TypeVar
+from typing import Dict, Optional, Type, TypeVar
 
 from processor.base import ProcessorStrategy
 from processor.impl.cbg import CustomerCBGProcessor
 
 # 邮箱后缀与处理策略类的映射，只保存了一个实例(类似单例模式)
-processor_map = {
-    "swhysc.com": CustomerCBGProcessor(),  # 测试邮箱后缀
-    "cgbchina.com.cn": CustomerCBGProcessor(),  # 广发银行
+processor_map: Dict[str, Type[ProcessorStrategy]] = {
+    "swhysc.com": CustomerCBGProcessor,  # 测试邮箱后缀
+    "cgbchina.com.cn": CustomerCBGProcessor,  # 广发银行
 }
 
 T = TypeVar("T", bound=ProcessorStrategy)
 
 
-def get_processor(email: str) -> T:
+def get_processor(email: str) -> Optional[ProcessorStrategy]:
     """
     根据邮箱地址后缀获取对应的处理策略类实例
     :param email: 邮箱地址
     :return: ProcessorStrategy 子类实例
     """
     email_suffix = email.split("@")[-1]
-
-    return processor_map.get(email_suffix)
+    processor_cls = processor_map.get(email_suffix)
+    if processor_cls is not None:
+        return processor_cls()
+    return None
 
 
 subject_sheet_map = {

@@ -222,7 +222,7 @@ class ExcelHandler:
         sheet = self.ensure_sheet_exists(wb, "今日失败报价")
         self.clear_sheet_content(sheet)
         self.write_abnormal_mails(sheet)
-        wb.save()  # type: ignore
+        wb.save()
 
     def process_successful_mails_sheet(self, wb: xw.Book):
         sheet = self.ensure_sheet_exists(wb, "今日成功报价")
