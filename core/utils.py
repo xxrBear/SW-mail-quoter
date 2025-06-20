@@ -39,7 +39,7 @@ def add_excel_subject_cell(wb: xw.Book, mail: EachMail, next_letter: str) -> Non
     wb.save()
 
 
-def get_rate(underlying: str, value: float) -> float:
+def get_rate(underlying: str, value: float) -> str:
     """
     根据输入值，返回对应区间的利率（百分比）
 
@@ -59,7 +59,7 @@ def get_rate(underlying: str, value: float) -> float:
     return rates[-1]
 
 
-def get_risk_free_rate(underlying: str):
+def get_risk_free_rate(underlying: str) -> str:
     if underlying.startswith("AU"):
         r = "2.4%"
     else:

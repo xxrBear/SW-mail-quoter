@@ -8,7 +8,7 @@ from email.mime.message import MIMEMessage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import make_msgid
-from typing import List, Union
+from typing import Dict, List, Union
 
 from bs4 import BeautifulSoup
 
@@ -80,7 +80,7 @@ class EmailClient:
         self,
         folder: str = "INBOX",
         since_date: date = date.today(),
-    ) -> List[EachMail]:
+    ) -> Dict[str, List[EachMail]]:
         """读取所有邮件，并整理成字典
 
         :param folder: 邮件文件夹，默认为 "INBOX"
@@ -89,12 +89,12 @@ class EmailClient:
         """
         mail_client = self.connect(protocol="imap")
 
-        mail_client.select(folder)  # 选择收件箱
+        mail_client.select(folder)  # type: ignore # 选择收件箱
 
         result_dict = defaultdict(list)
 
         # 根据条件搜索邮件（可选条件：ALL、UNSEEN、SUBJECT "关键字"）
-        status, messages = mail_client.search(
+        status, messages = mail_client.search(  # type: ignore
             None, "Since", since_date.strftime("%d-%b-%Y")
         )
         if status != "OK":
@@ -106,7 +106,7 @@ class EmailClient:
 
         for msg_id in message_ids:
             # 邮件原始数据
-            status, msg_data = mail_client.fetch(msg_id, "(RFC822)")
+            status, msg_data = mail_client.fetch(msg_id, "(RFC822)")  # type: ignore
             if status != "OK":
                 continue
 

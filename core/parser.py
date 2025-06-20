@@ -1,5 +1,6 @@
 import base64
 import hashlib
+from datetime import datetime
 from email.header import decode_header
 from email.message import Message
 from email.utils import parseaddr, parsedate_to_datetime
@@ -23,7 +24,7 @@ def get_mail_hash(mail: EachMail) -> str:
     return hash_obj.hexdigest()
 
 
-def parse_mail_sent_time(msg: Message) -> Optional[str]:
+def parse_mail_sent_time(msg: Message) -> Optional[datetime]:
     """
     解析邮件的发送时间，返回格式化后的字符串
     :param msg: 邮件 Message 对象
@@ -36,7 +37,7 @@ def parse_mail_sent_time(msg: Message) -> Optional[str]:
 
         # 解析邮件日期
         dt = parsedate_to_datetime(date_str)
-        return dt
+        return dt if dt else None
     except Exception as e:
         print(f"解析发送时间失败: {e}")
         return None

@@ -1,3 +1,5 @@
+from typing import Optional, Type, TypeVar
+
 from processor.base import ProcessorStrategy
 from processor.impl.cbg import CustomerCBGProcessor
 
@@ -7,8 +9,10 @@ processor_map = {
     "cgbchina.com.cn": CustomerCBGProcessor(),  # 广发银行
 }
 
+T = TypeVar("T", bound=ProcessorStrategy)
 
-def get_processor(email: str) -> ProcessorStrategy:
+
+def get_processor(email: str) -> T:
     """
     根据邮箱地址后缀获取对应的处理策略类实例
     :param email: 邮箱地址
@@ -26,7 +30,7 @@ subject_sheet_map = {
 }
 
 
-def choose_sheet_by_subject(subject: str) -> str:
+def choose_sheet_by_subject(subject: str) -> Optional[str]:
     """根据邮件主题选择对应的工作表名称
     :param subject: 邮件主题
     :return: 对应的工作表名称

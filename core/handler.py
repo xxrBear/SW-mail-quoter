@@ -37,7 +37,7 @@ class MailHandler:
             processor = get_processor(eamil_addr)  # 获取每个客户对应的邮件处理策略
 
             # 有可报价邮件，清空 Sheet 行
-            sheet_set = set([i.sheet_name for i in result_list])
+            sheet_set = set([i.sheet_name for i in result_list if i.sheet_name])
             for _sheet_name in sheet_set:
                 excel_handler.clear_sheet_columns(wb, _sheet_name)
 
@@ -52,14 +52,12 @@ class MailHandler:
                 quote_value = processor.process_excel(mail, wb, sheet_name_count)
                 processed_mail = processor.process_mail_html(mail, quote_value)
 
-                # 回复邮件
+                # 待回复邮件内容
                 pending_emails.append(processed_mail)
-                # mail_client.reply_mail(processed_mail)
-                # print(f"已回复邮件: {processed_mail.subject} 来自: {eamil_addr} \n ")
 
                 # 写入数据库
                 try:
-                    mail_state.update_or_create_record(processed_mail)
+                    mail_state.update_or_create_record(processed_mail)  # type: ignore
                 except Exception as e:
                     print(f"写入数据库出错: {e}")
 
@@ -156,13 +154,13 @@ class ExcelHandler:
             sheet.api.Application.CutCopyMode = True
             wb.save()
 
-    def ensure_sheet_exists(self, wb: xw.Sheet, sheet_name: str):
+    def ensure_sheet_exists(self, wb: xw.Book, sheet_name: str):
         """确保 sheet_name Sheet 存在，如果不存在就创建"""
-        if sheet_name not in [s.name for s in wb.sheets]:
-            sheet = wb.sheets.add(name=sheet_name, before="8080结构")
+        if sheet_name not in [s.name for s in wb.sheets]:  # type: ignore
+            sheet = wb.sheets.add(name=sheet_name, before="8080结构")  # type: ignore
             self._init_sheet_header(sheet)
         else:
-            sheet = wb.sheets[sheet_name]
+            sheet = wb.sheets[sheet_name]  # type: ignore
         return sheet
 
     def _init_sheet_header(self, sheet: xw.Sheet):
@@ -216,7 +214,7 @@ class ExcelHandler:
         print_banner("开始写入报价成功的邮件数据...")
 
         mail_state = MailState()
-        result = mail_state.get_successful_mail_info()
+        result = mail_state.get_successful_mail_info()  # type: ignore
         sheet.range("A2").value = result
 
     def process_abnormal_mails_sheet(self, wb: xw.Book):
@@ -224,7 +222,7 @@ class ExcelHandler:
         sheet = self.ensure_sheet_exists(wb, "今日失败报价")
         self.clear_sheet_content(sheet)
         self.write_abnormal_mails(sheet)
-        wb.save()
+        wb.save()  # type: ignore
 
     def process_successful_mails_sheet(self, wb: xw.Book):
         sheet = self.ensure_sheet_exists(wb, "今日成功报价")

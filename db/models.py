@@ -70,7 +70,7 @@ class MailState(Base):
         session.commit()
 
     @with_session
-    def mail_exists(session: SessionLocal, self, mail: EachMail) -> bool:
+    def mail_exists(session: SessionLocal, self, mail: EachMail) -> bool:  # type: ignore
         """检查邮件是否已存在"""
         mail_hash = get_mail_hash(mail)
         return (
@@ -79,7 +79,9 @@ class MailState(Base):
 
     @with_session
     def count_today_sheet_names(
-        session: SessionLocal, self, mail: EachMail
+        session: SessionLocal,  # type: ignore
+        self,
+        mail: EachMail,
     ) -> MailStateEnum:
         """获取当天sheet_name对应的数量"""
         mail_count = (
@@ -95,7 +97,7 @@ class MailState(Base):
         return mail_count
 
     @with_session
-    def get_successful_mail_info(session: SessionLocal, self) -> list:
+    def get_successful_mail_info(session: SessionLocal, self) -> list:  # type: ignore
         mails = session.query(MailState).filter(
             MailState.state == MailStateEnum.PROCESSED,
             MailState.created_time >= date.today(),
