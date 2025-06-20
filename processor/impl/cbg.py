@@ -13,7 +13,9 @@ from processor.mapping import get_sheet_handler
 
 
 class CustomerCBGProcessor(ProcessorStrategy):
-    def process_excel(self, mail: EachMail, wb: xw.Book, sheet_name_count: int) -> str:
+    def process_excel(
+        self, mail: EachMail, wb: xw.Book, sheet_copy_count: int
+    ) -> float:
         """
         操作 Excel 文件，获取指定表格中的值
         :param mail: EachMail 对象
@@ -30,7 +32,7 @@ class CustomerCBGProcessor(ProcessorStrategy):
             fields_to_update = sheet_mapping_handler.fields_rule_dict
 
             # 将指定邮件内容写入 Excel
-            next_letter = calc_next_letter("C", sheet_name_count)
+            next_letter = calc_next_letter("C", sheet_copy_count)
             for header, value in mail.df_dict.items():
                 if fields_to_update.get(header):
                     cell, apply_method = fields_to_update[header]
@@ -64,9 +66,9 @@ class CustomerCBGProcessor(ProcessorStrategy):
         except Exception as e:
             print("操作 Excel 失败：", e)
 
-        return str(quote_value)
+        return quote_value
 
-    def process_mail_html(self, mail: EachMail, quote_value: str):
+    def process_mail_html(self, mail: EachMail, quote_value: float):
         """
         处理邮件 HTML 内容
         :param mail: EachMail 对象

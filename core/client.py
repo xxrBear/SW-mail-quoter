@@ -215,7 +215,6 @@ class EmailClient:
             reply_info.attach(html_part)
         reply_body.attach(reply_info)
         reply_orig_message = MIMEMultipart("alternative")
-        reply_orig_message.attach(original_msg)
         reply_body.attach(reply_orig_message)
 
         reply_body.attach(MIMEMessage(original_msg))

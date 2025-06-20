@@ -41,15 +41,21 @@ class MailHandler:
             for _sheet_name in sheet_set:
                 excel_handler.clear_sheet_columns(wb, _sheet_name)
 
+            sheet_name_count_dict = {_sheet_name: 0 for _sheet_name in sheet_set}
+
             for mail in result_list:
                 print(f"处理邮件: {mail.subject} 来自: {eamil_addr}")
 
                 # 处理 Excel 对应 Sheet
-                sheet_name_count = mail_state.count_today_sheet_names(mail)
-                excel_handler.copy_sheet_columns(wb, mail.sheet_name, sheet_name_count)
+                # sheet_name_count = mail_state.count_today_sheet_names(mail)
+                excel_handler.copy_sheet_columns(
+                    wb, mail.sheet_name, sheet_name_count_dict[mail.sheet_name]
+                )
 
                 # 获取报价值，并写入待发送邮件内容中
-                quote_value = processor.process_excel(mail, wb, sheet_name_count)
+                quote_value = processor.process_excel(
+                    mail, wb, sheet_name_count_dict[mail.sheet_name]
+                )
                 processed_mail = processor.process_mail_html(mail, quote_value)
 
                 # 待回复邮件内容
@@ -60,6 +66,8 @@ class MailHandler:
                     mail_state.update_or_create_record(processed_mail)  # type: ignore
                 except Exception as e:
                     print(f"写入数据库出错: {e}")
+
+                sheet_name_count_dict[mail.sheet_name] += 1
 
         # 使用多线程发送邮件
         with ThreadPoolExecutor(max_workers=10) as executor:
@@ -131,11 +139,11 @@ class ExcelHandler:
         wb.save()
 
     def copy_sheet_columns(
-        self, wb: xw.Book, sheet_name: str, sheet_name_count: int
+        self, wb: xw.Book, sheet_name: str, sheet_copy_count: int
     ) -> None:
         """复制工作表的列"""
         sheet = wb.sheets[sheet_name]
-        letter = calc_next_letter("C", sheet_name_count)
+        letter = calc_next_letter("C", sheet_copy_count)
 
         # --- 禁用 Excel 事件和显示警告 ---
         wb.app.enable_events = False  # 禁用VBA事件

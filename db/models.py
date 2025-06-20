@@ -79,24 +79,6 @@ class MailState(Base):
             )
             return c
 
-    def count_today_sheet_names(
-        self,
-        mail: EachMail,
-    ) -> int:
-        """获取当天sheet_name对应的数量"""
-        with session_scope() as session:
-            mail_count = (
-                session.query(MailState)
-                .filter(
-                    MailState.sheet_name == mail.sheet_name,
-                    MailState.state == MailStateEnum.PROCESSED,
-                    MailState.created_time >= date.today(),
-                )
-                .count()
-            )
-
-            return mail_count
-
     def get_successful_mail_info(self) -> list:
         with session_scope() as session:
             mails = session.query(MailState).filter(
