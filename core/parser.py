@@ -82,16 +82,16 @@ def extract_mail_content(msg: Message) -> MailContent:
     payload = msg.get_payload(decode=False)  # 获取邮件的内容部分
 
     for part in payload:
-        content_type = part.get_content_type()
+        content_type = part.get_content_type()  # type: ignore
         if content_type == "text/plain":
-            plain += decode_part(part)
+            plain += decode_part(part)  # type: ignore
         elif content_type == "text/html":
-            html += decode_part(part)
-        elif part.get_filename():
-            attachments.extend(parse_attachments(part))
+            html += decode_part(part)  # type: ignore
+        elif part.get_filename():  # type: ignore
+            attachments.extend(parse_attachments(part))  # type: ignore
         # 嵌套的multipart
         elif content_type.startswith("multipart/"):
-            nested_multipart = extract_mail_content(part)
+            nested_multipart = extract_mail_content(part)  # type: ignore
             nested.append(nested_multipart)
 
     return MailContent(plain, html, attachments, nested)
@@ -103,7 +103,12 @@ def decode_part(part: Message) -> str:
 
     payload = part.get_payload(decode=True)
 
-    return payload.decode(charset, errors="replace")
+    if isinstance(payload, bytes):
+        return payload.decode(charset, errors="replace")
+    elif isinstance(payload, str):
+        return payload
+    else:
+        return ""
 
 
 def parse_attachments(part: Message) -> list:
@@ -185,10 +190,10 @@ def gen_cc(msg: Message, except_addresses: List[str]) -> str:
 
     # 处理 To 地址
     to_addrs = msg.get("To")
-    cc.extend(filter_addresses(to_addrs, except_addresses))
+    cc.extend(filter_addresses(to_addrs or "", except_addresses))
 
     # 处理 CC 地址
     cc_addrs = msg.get("CC")
-    cc.extend(filter_addresses(cc_addrs, except_addresses))
+    cc.extend(filter_addresses(cc_addrs or "", except_addresses))
 
     return ",".join(cc)

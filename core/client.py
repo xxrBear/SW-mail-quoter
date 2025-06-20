@@ -8,7 +8,7 @@ from email.mime.message import MIMEMessage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import make_msgid
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 
 from bs4 import BeautifulSoup
 
@@ -28,9 +28,9 @@ from processor.registry import choose_sheet_by_subject
 class EmailClient:
     def __init__(
         self,
-        server: str,
-        address: str,
-        password: str,
+        server: Optional[str],
+        address: Optional[str],
+        password: Optional[str],
         imap_port: int = 993,
         smtp_port: int = 465,
     ) -> None:
@@ -106,8 +106,8 @@ class EmailClient:
 
         for msg_id in message_ids:
             # 邮件原始数据
-            status, msg_data = mail_client.fetch(msg_id, "(RFC822)")  # type: ignore
-            if status != "OK":
+            status, msg_data = mail_client.fetch(msg_id, "(RFC822)")
+            if status != "OK" or not msg_data or not msg_data[0]:
                 continue
 
             # 邮件内容
