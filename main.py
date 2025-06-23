@@ -12,7 +12,7 @@ def process_excel_and_reply_mails():
     # 启动 Excel 应用
     app = xw.App(visible=False, add_book=False)
     try:
-        wb = app.books.open("./test.xlsm")
+        wb = app.books.open("C:\\product-auto-quote.xlsm")
     except Exception as e:
         print("打开 Excel 文件失败:", e)
         app.quit()
@@ -20,7 +20,7 @@ def process_excel_and_reply_mails():
 
     # 处理邮件并回复
     try:
-        mail_handler = MailHandler(since_date=date(2025, 5, 1))
+        mail_handler = MailHandler()
         mail_handler.handle(wb)
 
         print("所有邮件处理完成，保存并关闭 Excel 文件...")

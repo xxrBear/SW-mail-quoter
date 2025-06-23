@@ -159,16 +159,19 @@ def parse_from_info(msg: Message) -> Tuple[str, str]:
 def parse_subject(msg: Message) -> str:
     """解析邮件主题 Subject 字段 ，并处理可能的编码"""
 
-    subject = msg["Subject"]
-    decoded_fragments = decode_header(subject)
-    subject_str = ""
-    for fragment, charset in decoded_fragments:
+    subject = ""
+    for fragment, charset in decode_header(msg["Subject"]):
         if isinstance(fragment, bytes):
-            subject_str += fragment.decode(charset or "utf-8", errors="replace")
-        else:
-            subject_str += fragment
-
-    return subject_str
+            # 如果 charset 不存在或非法，就兜底 utf-8
+            safe_charset = (charset or "utf-8").lower()
+            if safe_charset in ("unknown-8bit", "x-unknown"):
+                safe_charset = "utf-8"
+            try:
+                fragment = fragment.decode(safe_charset, errors="replace")
+            except LookupError:
+                fragment = fragment.decode("utf-8", errors="replace")
+        subject += fragment
+    return subject
 
 
 def filter_addresses(addresses: str, except_addresses: List[str]) -> List[str]:
