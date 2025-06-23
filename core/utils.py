@@ -39,17 +39,25 @@ def add_excel_subject_cell(wb: xw.Book, mail: EachMail, next_letter: str) -> Non
     wb.save()
 
 
-def get_rate(underlying: str, value: float) -> str:
+def get_rate(underlying: str, value: float, wb: xw.Book) -> str:
     """
     根据输入值，返回对应区间的利率（百分比）
-
     """
-    thresholds = [0.12, 0.24, 0.36, 0.72, 10000]
+    sheet = wb.sheets["标的价格"]
+
+    thresholds = sheet.range("E1:I1").value
 
     if underlying.endswith("IDC"):
-        rates = ["17.00%", "16.50%", "16.30%", "16.00%", "15.50%"]
+        rates = sheet.range("E2:I2").value
+    elif underlying.startswith("AU") and underlying.endswith("SGE"):
+        rates = sheet.range("E3:I3").value
     else:
-        rates = ["16.50%", "16.30%", "16.10%", "15.50%", "15.00%"]
+        rates = sheet.range("E4:I4").value
+
+    # print(underlying)
+    # print(value)
+    # print(thresholds)
+    # print(rates)
 
     for threshold, rate in zip(thresholds, rates):
         if value <= threshold:

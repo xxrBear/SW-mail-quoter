@@ -49,7 +49,7 @@ class CustomerCBGProcessor(ProcessorStrategy):
                 sheet.range(next_letter + other_dict.get("交易日")).value
             )
             # Vol
-            rate = get_rate(underlying, trade_date)
+            rate = get_rate(underlying, trade_date, wb)
             sheet.range(next_letter + other_dict.get("VOL")).value = rate
 
             # 无风险利率
