@@ -49,7 +49,7 @@ class CBGBinarryCallHandler(BaseHandler):
             "产品启动日": ("4", str),
             "期末观察日": ("5", str),
             "最低收益率（年化）": ("9", str),
-            "最高收益率（年化）": ("11", str),
+            "最高收益率（年化）": ("10", str),
             "期权费 （年化）": ("8", str),
         }
 
