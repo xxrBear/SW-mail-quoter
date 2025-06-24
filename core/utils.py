@@ -54,11 +54,6 @@ def get_rate(underlying: str, value: float, wb: xw.Book) -> str:
     else:
         rates = sheet.range("E4:I4").value
 
-    # print(underlying)
-    # print(value)
-    # print(thresholds)
-    # print(rates)
-
     for threshold, rate in zip(thresholds, rates):
         if value <= threshold:
             return rate

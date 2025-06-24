@@ -1,6 +1,6 @@
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import date
+from datetime import date, datetime
 from typing import Dict, List
 
 import xlwings as xw
@@ -57,7 +57,6 @@ class MailHandler:
                 )
                 processed_mail = processor.process_mail_html(mail, quote_value)
 
-                print(processed_mail.underlying)
                 if not processed_mail.underlying.startswith("AU"):
                     print("非 AU 开头标的合约，暂时跳过")
                     continue
@@ -128,7 +127,9 @@ class MailHandler:
         return filtered_dict
 
     def skip(self, mail: EachMail, reason: str):
-        mail_context.skip_mail(mail.subject, mail.from_addr, reason)
+        mail_context.skip_mail(
+            mail.subject, mail.from_addr, mail.sent_time, datetime.now(), reason
+        )
 
 
 class ExcelHandler:
@@ -188,6 +189,8 @@ class ExcelHandler:
         else:
             sheet.range("A1").value = "邮件主题"
             sheet.range("B1").value = "发件人"
+            sheet.range("C1").value = "询价时间"
+            sheet.range("D1").value = "报价时间"
             # 表格颜色
             sheet.api.Tab.Color = 65280  # 绿色
 

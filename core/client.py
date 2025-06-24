@@ -3,7 +3,7 @@ import imaplib
 import os
 import smtplib
 from collections import defaultdict
-from datetime import date
+from datetime import date, datetime
 from email.mime.message import MIMEMessage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -118,6 +118,17 @@ class EmailClient:
             subject = parse_subject(msg)
             from_name, from_addr = parse_from_info(msg)
 
+            sent_time = parse_mail_sent_time(msg)
+            if not sent_time:
+                mail_context.skip_mail(
+                    subject,
+                    from_addr,
+                    None,
+                    datetime.now(),
+                    "无法解析发送时间，跳过邮件",
+                )
+                continue
+
             # 筛选邮件
             if "衍生品交易" not in subject:
                 continue
@@ -128,7 +139,11 @@ class EmailClient:
             filter_subject_list = ["看涨阶梯", "二元看涨"]
             if not any(i for i in filter_subject_list if i in subject):
                 mail_context.skip_mail(
-                    subject, from_addr, "邮件处理策略未配置，跳过邮件"
+                    subject,
+                    from_addr,
+                    sent_time,
+                    datetime.now(),
+                    "邮件处理策略未配置，跳过邮件",
                 )
                 continue
 
@@ -138,22 +153,27 @@ class EmailClient:
             # HTML　表格的内容（字典类型）
             df_dict = parse_html_to_dict(content.html)
             if not df_dict:
-                mail_context.skip_mail(subject, from_addr, "无可用表格内容，跳过邮件")
+                mail_context.skip_mail(
+                    subject,
+                    from_addr,
+                    sent_time,
+                    datetime.now(),
+                    "无可用表格内容，跳过邮件",
+                )
                 continue
 
             sheet_name = choose_sheet_by_subject(subject)
             if not sheet_name:
                 mail_context.skip_mail(
-                    subject, from_addr, "未找到对应的工作表名称，跳过邮件"
+                    subject,
+                    from_addr,
+                    sent_time,
+                    datetime.now(),
+                    "未找到对应的工作表名称，跳过邮件",
                 )
                 continue
 
             soup = BeautifulSoup(content.html, "html.parser")
-
-            sent_time = parse_mail_sent_time(msg)
-            if not sent_time:
-                mail_context.skip_mail(subject, from_addr, "无法解析发送时间，跳过邮件")
-                continue
 
             result_dict[from_addr].append(
                 EachMail(

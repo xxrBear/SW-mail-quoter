@@ -94,4 +94,4 @@ class MailState(Base):
                 )
                 .order_by(MailState.rev_time)
             )
-            return [[m.subject, m.from_addr] for m in mails]
+            return [[m.subject, m.from_addr, m.rev_time, m.created_time] for m in mails]
