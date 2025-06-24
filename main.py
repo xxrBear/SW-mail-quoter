@@ -12,7 +12,7 @@ def process_excel_and_reply_mails():
     # 启动 Excel 应用
     app = xw.App(visible=False, add_book=False)
     try:
-        wb = app.books.open("C:\\product-auto-quote.xlsm")
+        wb = app.books.open(r"C:\Users\admin\Desktop\奇异期权.xlsm")
     except Exception as e:
         print("打开 Excel 文件失败:", e)
         app.quit()

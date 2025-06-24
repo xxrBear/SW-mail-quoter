@@ -5,7 +5,7 @@ from typing import Dict, List
 
 import xlwings as xw
 
-from core.client import mail_client
+from core.client import mail_client, send_mail_client
 from core.context import mail_context
 from core.schemas import EachMail
 from core.utils import calc_next_letter, print_banner
@@ -47,7 +47,6 @@ class MailHandler:
                 print(f"处理邮件: {mail.subject} 来自: {eamil_addr}")
 
                 # 处理 Excel 对应 Sheet
-                # sheet_name_count = mail_state.count_today_sheet_names(mail)
                 excel_handler.copy_sheet_columns(
                     wb, mail.sheet_name, sheet_name_count_dict[mail.sheet_name]
                 )
@@ -57,6 +56,11 @@ class MailHandler:
                     mail, wb, sheet_name_count_dict[mail.sheet_name]
                 )
                 processed_mail = processor.process_mail_html(mail, quote_value)
+
+                print(processed_mail.underlying)
+                if not processed_mail.underlying.startswith("AU"):
+                    print("非 AU 开头标的合约，暂时跳过")
+                    continue
 
                 # 待回复邮件内容
                 pending_emails.append(processed_mail)
@@ -72,7 +76,7 @@ class MailHandler:
         # 使用多线程发送邮件
         with ThreadPoolExecutor(max_workers=10) as executor:
             futures = [
-                executor.submit(mail_client.reply_mail, p) for p in pending_emails
+                executor.submit(send_mail_client.reply_mail, p) for p in pending_emails
             ]
             for f in as_completed(futures):
                 try:

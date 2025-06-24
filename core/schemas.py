@@ -26,3 +26,5 @@ class EachMail:
     df_dict: dict  # 解析后的 DataFrame 字典类型数据
     soup: Optional[BeautifulSoup] = None  # BeautifulSoup 对象，解析后的邮件 HTML 内容
     sheet_name: Optional[str] = None
+
+    underlying: Optional[str] = None

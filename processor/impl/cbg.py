@@ -43,6 +43,7 @@ class CustomerCBGProcessor(ProcessorStrategy):
             other_dict = sheet_mapping_handler.other_dict
             # 标的合约
             underlying = sheet.range(next_letter + other_dict.get("标的合约")).value
+            mail.underlying = underlying
 
             # 交易日
             trade_date = float(

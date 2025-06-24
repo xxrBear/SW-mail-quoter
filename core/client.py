@@ -194,10 +194,10 @@ class EmailClient:
         # 构建邮件头
         reply_mime["From"] = self.address
         # reply_mime["To"] = original_msg["From"]
-        reply_mime["To"] = "17855370672@163.com"
+        reply_mime["To"] = "zhaochenxing@swhysc.com"
 
         reply_mime["Subject"] = f"Re: {original_msg['Subject']}"
-        reply_mime["CC"] = gen_cc(original_msg, [self.address])
+        # reply_mime["CC"] = gen_cc(original_msg, [self.address])
 
         # 构建回复邮件体
         reply_body = MIMEMultipart("related")
@@ -254,5 +254,27 @@ def create_mail_client():
     )
 
 
+def create_send_mail_client():
+    """从环境变量创建并返回邮件客户端实例"""
+    required_env_vars = {
+        "EMAIL_SMTP_SERVER": os.getenv("EMAIL_SMTP_SERVER"),
+        "EMAIL_USER_NAME": os.getenv("SEND_EMAIL_USER_NAME"),
+        "EMAIL_USER_PASS": os.getenv("SEND_EMAIL_USER_PASS"),
+    }
+
+    missing_vars = [key for key, value in required_env_vars.items() if not value]
+    if missing_vars:
+        raise RuntimeError(f"缺少必须的环境变量: {', '.join(missing_vars)}")
+
+    return EmailClient(
+        server=required_env_vars.get("EMAIL_SMTP_SERVER"),
+        address=required_env_vars.get("EMAIL_USER_NAME"),
+        password=required_env_vars.get("EMAIL_USER_PASS"),
+    )
+
+
 # 全局单例
 mail_client = create_mail_client()
+
+# 发送邮箱服务器
+send_mail_client = create_send_mail_client()
