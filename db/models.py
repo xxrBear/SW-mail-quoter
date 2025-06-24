@@ -22,6 +22,10 @@ class MailState(Base):
         DateTime(timezone=True), server_default=func.now()
     )
 
+    rev_time: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), comment="邮件接收时间"
+    )
+
     subject: Mapped[str] = mapped_column(
         String(256), nullable=False, index=True, comment="邮件标题"
     )
@@ -81,8 +85,12 @@ class MailState(Base):
 
     def get_successful_mail_info(self) -> list:
         with session_scope() as session:
-            mails = session.query(MailState).filter(
-                MailState.state == MailStateEnum.PROCESSED,
-                MailState.created_time >= date.today(),
+            mails = (
+                session.query(MailState)
+                .filter(
+                    MailState.state == MailStateEnum.PROCESSED,
+                    MailState.created_time >= date.today(),
+                )
+                .order_by(MailState.rev_time)
             )
             return [[m.subject, m.from_addr] for m in mails]
