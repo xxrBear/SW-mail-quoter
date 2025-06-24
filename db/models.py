@@ -23,7 +23,7 @@ class MailState(Base):
     )
 
     rev_time: Mapped[DateTime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), comment="邮件接收时间"
+        DateTime(timezone=True), server_default=func.now(), comment="询价时间"
     )
 
     subject: Mapped[str] = mapped_column(
@@ -69,6 +69,7 @@ class MailState(Base):
                     state=MailStateEnum.PROCESSED,
                     subject=mail.subject,
                     from_addr=mail.from_addr,
+                    rev_time=mail.sent_time,
                 )
                 session.add(mail_obj)
             session.commit()

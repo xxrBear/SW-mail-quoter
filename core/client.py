@@ -121,6 +121,9 @@ class EmailClient:
             # 筛选邮件
             if "衍生品交易" not in subject:
                 continue
+            if "hold" in subject:
+                mail_context.skip_hold_email(subject, from_addr, "")
+                continue
 
             filter_subject_list = ["看涨阶梯", "二元看涨"]
             if not any(i for i in filter_subject_list if i in subject):

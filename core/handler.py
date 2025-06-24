@@ -74,18 +74,18 @@ class MailHandler:
                 sheet_name_count_dict[mail.sheet_name] += 1
 
         # 使用多线程发送邮件
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            futures = [
-                executor.submit(send_mail_client.reply_mail, p) for p in pending_emails
-            ]
-            for f in as_completed(futures):
-                try:
-                    f.result()
-                    print(
-                        f"已回复邮件: {processed_mail.subject} 来自: {eamil_addr} \n "
-                    )
-                except Exception as e:
-                    print(f"发送失败: {e}")
+        # with ThreadPoolExecutor(max_workers=10) as executor:
+        #     futures = [
+        #         executor.submit(send_mail_client.reply_mail, p) for p in pending_emails
+        #     ]
+        #     for f in as_completed(futures):
+        #         try:
+        #             f.result()
+        #             print(
+        #                 f"已回复邮件: {processed_mail.subject} 来自: {eamil_addr} \n "
+        #             )
+        #         except Exception as e:
+        #             print(f"发送失败: {e}")
 
         # 处理异常邮件，写入 Excel
         try:
@@ -181,6 +181,8 @@ class ExcelHandler:
             sheet.range("A1").value = "邮件主题"
             sheet.range("B1").value = "失败原因"
             sheet.range("C1").value = "发件人"
+            sheet.range("D1").value = "询价时间"
+            sheet.range("E1").value = "报价时间"
             # 表格颜色
             sheet.api.Tab.Color = 255  # 红色
         else:
@@ -216,7 +218,13 @@ class ExcelHandler:
             return
 
         data = [
-            [mail.get("subject"), mail.get("reason"), mail.get("sent_addr")]
+            [
+                mail.get("subject"),
+                mail.get("reason"),
+                mail.get("sent_addr"),
+                mail.get("sent_time"),
+                mail.get("created_time"),
+            ]
             for mail in mail_context.email
         ]
         # 从 A2 开始批量写值
