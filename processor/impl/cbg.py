@@ -42,13 +42,18 @@ class CustomerCBGProcessor(ProcessorStrategy):
             # 处理 Excel 中的数据
             other_dict = sheet_mapping_handler.other_dict
             # 标的合约
-            underlying = sheet.range(next_letter + other_dict.get("标的合约")).value
+            underlying_index = sheet.range(next_letter + other_dict.get("标的合约"))
+            underlying = underlying_index.value
             mail.underlying = underlying
 
             # 交易日
-            trade_date = float(
-                sheet.range(next_letter + other_dict.get("交易日")).value
-            )
+            trade_date_index = sheet.range(next_letter + other_dict.get("交易日"))
+            trade_date = trade_date_index.value
+            trade_date_formula = trade_date_index.formula
+
+            if str(trade_date_formula).startswith("AU"):
+                trade_date_formula = trade_date_formula.replace("$C", "$A")
+
             # Vol
             rate = get_rate(underlying, trade_date, wb)
             sheet.range(next_letter + other_dict.get("VOL")).value = rate
