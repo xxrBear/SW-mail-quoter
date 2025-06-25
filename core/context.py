@@ -28,9 +28,16 @@ class AbnormalMailContext:
         )
         print(f"{reason}: {subject} 来自：{sent_addr}")
 
-    def skip_hold_email(self, subject: str, sent_addr: str, reason: str) -> None:
+    def skip_hold_email(
+        self, subject: str, sent_addr: str, sent_time: datetime, reason: str = ""
+    ) -> None:
         self.hold_email.append(
-            {"subject": subject, "reason": reason, "sent_addr": sent_addr}
+            {
+                "subject": subject,
+                "reason": "hold邮件，跳过",
+                "sent_addr": sent_addr,
+                "sent_time": sent_time,
+            }
         )
 
 

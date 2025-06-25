@@ -98,6 +98,12 @@ class MailHandler:
         except Exception as e:
             print(f"写入今日成功报价报错：{e}")
 
+        # 处理 hold价
+        try:
+            excel_handler.process_hold_mails_sheet(wb)
+        except Exception as e:
+            print(f"写入hold价失败：{e}")
+
     def filter_unquotable_result_dict(
         self, result_dict: Dict[str, List[EachMail]]
     ) -> Dict[str, List[EachMail]]:
@@ -186,13 +192,19 @@ class ExcelHandler:
             sheet.range("E1").value = "报价时间"
             # 表格颜色
             sheet.api.Tab.Color = 255  # 红色
-        else:
+        elif "成功" in sheet.name:
             sheet.range("A1").value = "邮件主题"
             sheet.range("B1").value = "发件人"
             sheet.range("C1").value = "询价时间"
             sheet.range("D1").value = "报价时间"
             # 表格颜色
             sheet.api.Tab.Color = 65280  # 绿色
+        else:
+            sheet.range("A1").value = "邮件主题"
+            sheet.range("B1").value = "发件人"
+            sheet.range("C1").value = "询价时间"
+            sheet.range("D1").value = "报价时间"
+            sheet.api.Tab.Color = 65535  # 黄色
 
         # 定位表头范围
         header_range = sheet.range("A1").expand("right")
@@ -215,9 +227,34 @@ class ExcelHandler:
 
     def write_abnormal_mails(self, sheet: xw.Sheet):
         """把上下文中的异常邮件批量写入 Sheet"""
-        print_banner("开始写入报价失败的邮件数据...")
+        print_banner("开始写入当次报价失败的邮件数据...")
 
         if not mail_context.email:
+            return
+
+        data = [
+            [
+                mail.get("subject"),
+                mail.get("sent_addr"),
+                mail.get("sent_time"),
+                datetime.now(),
+            ]
+            for mail in mail_context.email
+        ]
+        # 从 A2 开始批量写值
+        sheet.range("A2").value = data
+
+    def write_today_successful_mails(self, sheet: xw.Sheet):
+        print_banner("开始写入今日报价成功的邮件数据...")
+
+        mail_state = MailState()
+        result = mail_state.get_successful_mail_info()  # type: ignore
+        sheet.range("A2").value = result
+
+    def write_hold_mails(self, sheet: xw.Sheet):
+        print_banner("开始写入当次hold价的邮件数据...")
+
+        if not mail_context.hold_email:
             return
 
         data = [
@@ -226,19 +263,11 @@ class ExcelHandler:
                 mail.get("reason"),
                 mail.get("sent_addr"),
                 mail.get("sent_time"),
-                mail.get("created_time"),
             ]
-            for mail in mail_context.email
+            for mail in mail_context.hold_email
         ]
         # 从 A2 开始批量写值
         sheet.range("A2").value = data
-
-    def write_today_successful_mails(self, sheet: xw.Sheet):
-        print_banner("开始写入报价成功的邮件数据...")
-
-        mail_state = MailState()
-        result = mail_state.get_successful_mail_info()  # type: ignore
-        sheet.range("A2").value = result
 
     def process_abnormal_mails_sheet(self, wb: xw.Book):
         """处理异常邮件的 sheet"""
@@ -251,4 +280,10 @@ class ExcelHandler:
         sheet = self.ensure_sheet_exists(wb, "今日成功报价")
         self.clear_sheet_content(sheet)
         self.write_today_successful_mails(sheet)
+        wb.save()
+
+    def process_hold_mails_sheet(self, wb: xw.Book):
+        sheet = self.ensure_sheet_exists(wb, "hold价邮件")
+        self.clear_sheet_content(sheet)
+        self.write_hold_mails(sheet)
         wb.save()

@@ -123,7 +123,7 @@ class EmailClient:
                 mail_context.skip_mail(
                     subject,
                     from_addr,
-                    None,
+                    datetime.now(),
                     datetime.now(),
                     "无法解析发送时间，跳过邮件",
                 )
@@ -132,8 +132,9 @@ class EmailClient:
             # 筛选邮件
             if "衍生品交易" not in subject:
                 continue
+
             if "hold" in subject:
-                mail_context.skip_hold_email(subject, from_addr, "")
+                mail_context.skip_hold_email(subject, from_addr, sent_time)
                 continue
 
             filter_subject_list = ["看涨阶梯", "二元看涨"]
