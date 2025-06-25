@@ -57,8 +57,17 @@ class MailHandler:
                 )
                 processed_mail = processor.process_mail_html(mail, quote_value)
 
-                if not processed_mail.underlying.startswith("AU"):
-                    print("非 AU 开头标的合约，暂时跳过")
+                if not (
+                    processed_mail.underlying.startswith("AU")
+                    or processed_mail.underlying.startswith("XAU")
+                ):
+                    print(
+                        f"非 AU 开头标的合约 {processed_mail.underlying}，暂时跳过 {processed_mail.subject} \n"
+                    )
+                    excel_handler.delete_sheet_column(
+                        wb, mail.sheet_name, sheet_name_count_dict[mail.sheet_name]
+                    )
+                    self.skip(mail, "非 AU 或 XAU 开头的标的合约，暂时跳过")
                     continue
 
                 # 待回复邮件内容
@@ -80,9 +89,6 @@ class MailHandler:
         #     for f in as_completed(futures):
         #         try:
         #             f.result()
-        #             print(
-        #                 f"已回复邮件: {processed_mail.subject} 来自: {eamil_addr} \n "
-        #             )
         #         except Exception as e:
         #             print(f"发送失败: {e}")
 
@@ -143,6 +149,11 @@ class ExcelHandler:
     Excel 公共规则处理类
     """
 
+    def delete_sheet_column(self, wb: xw.Book, sheet_name: str, sheet_copy_count: int):
+        sheet = wb.sheets[sheet_name]
+        sheet.api.Columns(sheet_copy_count + 3).Delete()
+        wb.save()
+
     def clear_sheet_columns(self, wb: xw.Book, sheet_name: str) -> None:
         """首次处理时，清空对应表格的列"""
         sheet = wb.sheets[sheet_name]
@@ -156,7 +167,6 @@ class ExcelHandler:
         sheet = wb.sheets[sheet_name]
         letter = calc_next_letter("C", sheet_copy_count)
 
-        # --- 禁用 Excel 事件和显示警告 ---
         wb.app.enable_events = False  # 禁用VBA事件
         wb.app.display_alerts = False  # 禁用Excel自身的警告弹窗
         try:
@@ -235,6 +245,7 @@ class ExcelHandler:
         data = [
             [
                 mail.get("subject"),
+                mail.get("reason"),
                 mail.get("sent_addr"),
                 mail.get("sent_time"),
                 datetime.now(),
@@ -260,9 +271,9 @@ class ExcelHandler:
         data = [
             [
                 mail.get("subject"),
-                mail.get("reason"),
                 mail.get("sent_addr"),
                 mail.get("sent_time"),
+                datetime.now(),
             ]
             for mail in mail_context.hold_email
         ]

@@ -30,6 +30,10 @@ class MailState(Base):
         String(256), nullable=False, index=True, comment="邮件标题"
     )
 
+    underlying: Mapped[str] = mapped_column(
+        String(256), nullable=False, comment="标的合约"
+    )
+
     from_addr: Mapped[str] = mapped_column(
         String(256), nullable=False, comment="发件人", index=True
     )
@@ -70,6 +74,7 @@ class MailState(Base):
                     subject=mail.subject,
                     from_addr=mail.from_addr,
                     rev_time=mail.sent_time,
+                    underlying=mail.underlying,
                 )
                 session.add(mail_obj)
             session.commit()

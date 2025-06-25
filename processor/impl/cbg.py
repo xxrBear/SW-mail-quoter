@@ -85,7 +85,7 @@ class CustomerCBGProcessor(ProcessorStrategy):
                 if p:
                     quote_value = f"*{quote_value:.3f}" if quote_value else "*0.000"
                     p.string = quote_value
-                    print(f"已修改报价字段 {label} 为：{quote_value}")
+                    print(f"已修改报价字段 {label} 为：{quote_value} \n")
                 break
         mail.content.html = str(mail.soup)
         return mail
