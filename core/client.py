@@ -3,7 +3,7 @@ import imaplib
 import os
 import smtplib
 from collections import defaultdict
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from email.mime.message import MIMEMessage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -94,6 +94,15 @@ class EmailClient:
         result_dict = defaultdict(list)
 
         # 根据条件搜索邮件（可选条件：ALL、UNSEEN、SUBJECT "关键字"）
+        # my_date = date(2025, 6, 25)
+        # status, messages = mail_client.search(  # type: ignore
+        #     None,
+        #     "SINCE",
+        #     my_date.strftime("%d-%b-%Y"),
+        #     "BEFORE",
+        #     (my_date + timedelta(days=1)).strftime("%d-%b-%Y"),
+        # )
+
         status, messages = mail_client.search(  # type: ignore
             None, "Since", since_date.strftime("%d-%b-%Y")
         )
@@ -218,7 +227,7 @@ class EmailClient:
         # 构建邮件头
         reply_mime["From"] = self.address
         # reply_mime["To"] = original_msg["From"]
-        reply_mime["To"] = "zhaochenxing@swhysc.com"
+        reply_mime["To"] = "17855370672@163.com"
 
         reply_mime["Subject"] = f"Re: {original_msg['Subject']}"
         # reply_mime["CC"] = gen_cc(original_msg, [self.address])
