@@ -51,8 +51,9 @@ class CustomerCBGProcessor(ProcessorStrategy):
             trade_date = trade_date_index.value
             trade_date_formula = trade_date_index.formula
 
-            if str(trade_date_formula).startswith("AU"):
+            if str(underlying).startswith("AU"):
                 trade_date_formula = trade_date_formula.replace("$C", "$A")
+                trade_date_index.formula = trade_date_formula
 
             # Vol
             rate = get_rate(underlying, trade_date, wb)
