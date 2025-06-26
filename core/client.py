@@ -1,4 +1,5 @@
 import email
+from email.header import decode_header
 import imaplib
 import os
 import smtplib
@@ -94,18 +95,18 @@ class EmailClient:
         result_dict = defaultdict(list)
 
         # 根据条件搜索邮件（可选条件：ALL、UNSEEN、SUBJECT "关键字"）
-        # my_date = date(2025, 6, 25)
-        # status, messages = mail_client.search(  # type: ignore
-        #     None,
-        #     "SINCE",
-        #     my_date.strftime("%d-%b-%Y"),
-        #     "BEFORE",
-        #     (my_date + timedelta(days=1)).strftime("%d-%b-%Y"),
-        # )
-
+        my_date = date(2025, 6, 25)
         status, messages = mail_client.search(  # type: ignore
-            None, "Since", since_date.strftime("%d-%b-%Y")
+            None,
+            "SINCE",
+            my_date.strftime("%d-%b-%Y"),
+            "BEFORE",
+            (my_date + timedelta(days=1)).strftime("%d-%b-%Y"),
         )
+
+        # status, messages = mail_client.search(  # type: ignore
+        #     None, "Since", since_date.strftime("%d-%b-%Y")
+        # )
         if status != "OK":
             print("未找到邮件")
             return result_dict
@@ -114,20 +115,26 @@ class EmailClient:
         message_ids = messages[0].split()
 
         for msg_id in message_ids:
-            # 邮件原始数据
-            status, msg_data = mail_client.fetch(msg_id, "(RFC822)")
+            # 读取邮件头部
+            status, msg_data = mail_client.fetch(msg_id, "(BODY.PEEK[HEADER])")
             if status != "OK" or not msg_data or not msg_data[0]:
                 continue
 
-            # 邮件内容
-            raw_email = msg_data[0][1]
-            msg = email.message_from_bytes(raw_email)
+            header_msg = email.message_from_bytes(msg_data[0][1])
+            # 解码标题
+            subject = parse_subject(header_msg)
+            # print(subject)
 
-            # 邮件标题和发件人信息
-            subject = parse_subject(msg)
-            from_name, from_addr = parse_from_info(msg)
+            # 筛选邮件
+            if "衍生品交易" not in subject:
+                continue
 
-            sent_time = parse_mail_sent_time(msg)
+            # 发件人和发件人邮箱
+            from_name, from_addr = parse_from_info(header_msg)
+            # print(from_name, from_addr)
+
+            # 发送时间
+            sent_time = parse_mail_sent_time(header_msg)
             if not sent_time:
                 mail_context.skip_mail(
                     subject,
@@ -136,14 +143,6 @@ class EmailClient:
                     datetime.now(),
                     "无法解析发送时间，跳过邮件",
                 )
-                continue
-
-            # 筛选邮件
-            if "衍生品交易" not in subject:
-                continue
-
-            if "hold" in subject:
-                mail_context.skip_hold_email(subject, from_addr, sent_time)
                 continue
 
             filter_subject_list = ["看涨阶梯", "二元看涨"]
@@ -157,6 +156,31 @@ class EmailClient:
                 )
                 continue
 
+            if "hold" in subject:
+                mail_context.skip_hold_email(subject, from_addr, sent_time)
+                continue
+
+            # 要处理的Sheet
+            sheet_name = choose_sheet_by_subject(subject)
+            if not sheet_name:
+                mail_context.skip_mail(
+                    subject,
+                    from_addr,
+                    sent_time,
+                    datetime.now(),
+                    "未找到对应的工作表名称，跳过邮件",
+                )
+                continue
+
+            # 邮件原始数据
+            status, msg_data = mail_client.fetch(msg_id, "(RFC822)")
+            if status != "OK" or not msg_data or not msg_data[0]:
+                continue
+
+            # 邮件内容
+            raw_email = msg_data[0][1]
+            msg = email.message_from_bytes(raw_email)
+
             # 文本内容
             content = parse_multipart_content(msg)
 
@@ -169,17 +193,6 @@ class EmailClient:
                     sent_time,
                     datetime.now(),
                     "无可用表格内容，跳过邮件",
-                )
-                continue
-
-            sheet_name = choose_sheet_by_subject(subject)
-            if not sheet_name:
-                mail_context.skip_mail(
-                    subject,
-                    from_addr,
-                    sent_time,
-                    datetime.now(),
-                    "未找到对应的工作表名称，跳过邮件",
                 )
                 continue
 
