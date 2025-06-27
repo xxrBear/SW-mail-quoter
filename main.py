@@ -1,10 +1,13 @@
+import pickle
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date
 
 import xlwings as xw
 
+from core.client import send_mail_client
 from core.handler import MailHandler
 from core.utils import print_banner, print_init_db
+from db.models import MailState
 
 
 def init_db():
@@ -48,20 +51,30 @@ def process_excel():
         wb.close()
         app.quit()
 
-    def reply_emails():
-        # 使用多线程发送邮件
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            futures = [
-                executor.submit(send_mail_client.reply_mail, p) for p in pending_emails
-            ]
-            for f in as_completed(futures):
-                try:
-                    f.result()
-                except Exception as e:
-                    print(f"发送失败: {e}")
+
+def reply_emails():
+    state = MailState()
+    mails = state.get_unprocessed_mails()
+
+    if not mails:
+        return
+
+    # 使用多线程发送邮件
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = [
+            executor.submit(send_mail_client.reply_mail, pickle.loads(p.mail_raw))
+            for p in mails
+        ]
+        for f in as_completed(futures):
+            try:
+                f.result()
+            except Exception as e:
+                print(f"发送失败: {e}")
+
+    print_banner("邮件发送成功")
 
 
 if __name__ == "__main__":
     # init_db()
-    process_excel()
-    # reply_emails()
+    # process_excel()
+    reply_emails()

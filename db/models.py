@@ -1,12 +1,14 @@
+import pickle
 from datetime import date, timedelta
+from typing import Optional
 
 from sqlalchemy import DateTime, Enum, LargeBinary, String, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from core.parser import get_mail_hash
 from core.schemas import EachMail
-from db.session import session_scope
 from db.enums import MailStateEnum
+from db.session import session_scope
 
 
 class Base(DeclarativeBase):
@@ -72,12 +74,11 @@ class MailState(Base):
                 mail_obj = MailState(
                     mail_hash=mail_hash,
                     sheet_name=mail.sheet_name,
-                    state=MailStateEnum.PROCESSED,
                     subject=mail.subject,
                     from_addr=mail.from_addr,
                     rev_time=mail.sent_time,
                     underlying=mail.underlying,
-                    mail_raw=mail,
+                    mail_raw=pickle.dumps(mail),
                 )
                 session.add(mail_obj)
             session.commit()
@@ -111,3 +112,15 @@ class MailState(Base):
                 ]
                 for m in mails
             ]
+
+    def get_unprocessed_mails(self) -> Optional["MailState"]:
+        with session_scope() as session:
+            mails = (
+                session.query(MailState)
+                .filter(
+                    MailState.created_time >= date.today(),
+                    MailState.state == MailStateEnum.UNPROCESSED,
+                )
+                .order_by(MailState.rev_time)
+            )
+            return mails
