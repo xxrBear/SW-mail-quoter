@@ -1,6 +1,6 @@
 from datetime import date, timedelta
 
-from sqlalchemy import DateTime, Enum, String, func
+from sqlalchemy import DateTime, Enum, LargeBinary, String, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from core.parser import get_mail_hash
@@ -53,6 +53,8 @@ class MailState(Base):
         String(64), unique=True, index=True, comment="标题与发送时间组合的哈希值"
     )
 
+    mail_raw: Mapped[bytes] = mapped_column(LargeBinary, comment="邮件内容")
+
     def update_or_create_record(self, mail: EachMail) -> None:
         """将处理结果更新或写入数据库"""
         mail_hash = get_mail_hash(mail)
@@ -75,6 +77,7 @@ class MailState(Base):
                     from_addr=mail.from_addr,
                     rev_time=mail.sent_time,
                     underlying=mail.underlying,
+                    mail_raw=mail,
                 )
                 session.add(mail_obj)
             session.commit()

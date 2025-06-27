@@ -82,17 +82,6 @@ class MailHandler:
 
                 sheet_name_count_dict[mail.sheet_name] += 1
 
-        # 使用多线程发送邮件
-        # with ThreadPoolExecutor(max_workers=10) as executor:
-        #     futures = [
-        #         executor.submit(send_mail_client.reply_mail, p) for p in pending_emails
-        #     ]
-        #     for f in as_completed(futures):
-        #         try:
-        #             f.result()
-        #         except Exception as e:
-        #             print(f"发送失败: {e}")
-
         # 处理异常邮件，写入 Excel
         try:
             excel_handler.process_abnormal_mails_sheet(wb)
