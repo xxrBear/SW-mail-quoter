@@ -6,7 +6,7 @@ from email.message import Message
 from email.utils import parseaddr, parsedate_to_datetime
 from typing import List, Optional, Tuple
 
-import pandas as pd
+from bs4 import BeautifulSoup
 
 from core.schemas import EachMail, MailContent
 
@@ -27,8 +27,6 @@ def get_mail_hash(mail: EachMail) -> str:
 def parse_mail_sent_time(msg: Message) -> Optional[datetime]:
     """
     解析邮件的发送时间，返回格式化后的字符串
-    :param msg: 邮件 Message 对象
-    :return: 格式化后的发送时间字符串，或 None 如果无法解析
     """
     try:
         date_str = msg["Date"]
@@ -46,18 +44,24 @@ def parse_mail_sent_time(msg: Message) -> Optional[datetime]:
 def parse_html_to_dict(html: str) -> Optional[dict]:
     """
     解析邮件 HTML 的 table 内容，返回字典格式的数据
-    :param html: 邮件 HTML 内容
-    :return: 解析后的数据列表
     """
     try:
-        df = pd.read_html(html)[0]  # 默认读第一张表
-        df = df[[0, 1]]  # 确保只保留前两列
-        df.dropna(subset=[0], inplace=True)  # 丢掉 key 是 NaN 的行
+        soup = BeautifulSoup(html, "html.parser")
+        table = soup.find("table")
+        if not table:
+            return None
 
-        result = {
-            str(k).strip(): (None if pd.isna(v) else str(v).strip())
-            for k, v in zip(df[0], df[1])
-        }
+        result = {}
+        for row in table.find_all("tr"):
+            cols = row.find_all(["td", "th"])
+            if len(cols) >= 2:
+                key = cols[0].get_text(strip=True)
+                value = cols[1].get_text(strip=True)
+                if key:  # 丢掉 key 为 "" 的行
+                    result[key] = value if value else None
+
+        # print(f"BeautifulSoup 解析的结果：{result}")
+
         return result
     except Exception as e:
         print(f"解析失败: {e}")
@@ -133,11 +137,6 @@ def parse_attachments(part: Message) -> list:
 def parse_from_info(msg: Message) -> Tuple[str, str]:
     """
     解析邮件的发件人信息（From 字段），返回发件人名称和邮箱地址
-
-    支持对名称部分的编码解码处理，并去除多余的引号和尖括号，保证返回的名称和邮箱地址为干净的字符串
-
-    :param msg: 邮件 Message 对象
-    :return: (发件人名称, 发件人邮箱地址)
     """
 
     raw_from = msg["From"]

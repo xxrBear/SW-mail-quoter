@@ -121,56 +121,14 @@ class EmailClient:
                 continue
 
             header_msg = email.message_from_bytes(msg_data[0][1])
-            # 解码标题
-            subject = parse_subject(header_msg)
-            # print(subject)
 
-            # 筛选邮件
-            if "衍生品交易" not in subject:
+            processed_header_msg = self._is_valid_header_msg(header_msg)
+            if not processed_header_msg:
                 continue
-
-            # 发件人和发件人邮箱
-            from_name, from_addr = parse_from_info(header_msg)
-            # print(from_name, from_addr)
-
-            # 发送时间
-            sent_time = parse_mail_sent_time(header_msg)
-            if not sent_time:
-                mail_context.skip_mail(
-                    subject,
-                    from_addr,
-                    datetime.now(),
-                    datetime.now(),
-                    "无法解析发送时间，跳过邮件",
+            else:
+                subject, sender, sender_email, sent_time, sheet_name = (
+                    processed_header_msg
                 )
-                continue
-
-            filter_subject_list = ["看涨阶梯", "二元看涨"]
-            if not any(i for i in filter_subject_list if i in subject):
-                mail_context.skip_mail(
-                    subject,
-                    from_addr,
-                    sent_time,
-                    datetime.now(),
-                    "邮件处理策略未配置，跳过邮件",
-                )
-                continue
-
-            if "hold" in subject:
-                mail_context.skip_hold_email(subject, from_addr, sent_time)
-                continue
-
-            # 要处理的Sheet
-            sheet_name = choose_sheet_by_subject(subject)
-            if not sheet_name:
-                mail_context.skip_mail(
-                    subject,
-                    from_addr,
-                    sent_time,
-                    datetime.now(),
-                    "未找到对应的工作表名称，跳过邮件",
-                )
-                continue
 
             # 邮件原始数据
             status, msg_data = mail_client.fetch(msg_id, "(RFC822)")
@@ -189,7 +147,7 @@ class EmailClient:
             if not df_dict:
                 mail_context.skip_mail(
                     subject,
-                    from_addr,
+                    sender_email,
                     sent_time,
                     datetime.now(),
                     "无可用表格内容，跳过邮件",
@@ -198,12 +156,12 @@ class EmailClient:
 
             soup = BeautifulSoup(content.html, "html.parser")
 
-            result_dict[from_addr].append(
+            result_dict[sender_email].append(
                 EachMail(
                     msg_id=msg_id,
                     subject=subject,
-                    from_name=from_name,
-                    from_addr=from_addr,
+                    from_name=sender,
+                    from_addr=sender_email,
                     content=content,
                     message=msg,
                     df_dict=df_dict,
@@ -279,6 +237,63 @@ class EmailClient:
             raise
         finally:
             smtp_client.quit()
+
+    def _is_valid_header_msg(self, header_msg):
+        """是否是有效的邮件头"""
+
+        # 解码标题
+        subject = parse_subject(header_msg)
+        # print(subject)
+
+        # 筛选邮件
+        if "衍生品交易" not in subject:
+            return
+
+        # 发件人和发件人邮箱
+        sender, sender_email = parse_from_info(header_msg)
+        # print(from_name, from_addr)
+
+        # 发送时间
+        now = datetime.now()
+        sent_time = parse_mail_sent_time(header_msg)
+        if not sent_time:
+            mail_context.skip_mail(
+                subject,
+                sender_email,
+                now,
+                now,
+                "无法解析发送时间，跳过邮件",
+            )
+            return
+
+        if "hold" in subject:
+            mail_context.skip_hold_email(subject, sender_email, sent_time)
+            return
+
+        filter_subject_list = ["看涨阶梯", "二元看涨"]
+        if not any(i for i in filter_subject_list if i in subject):
+            mail_context.skip_mail(
+                subject,
+                sender_email,
+                sent_time,
+                now,
+                "邮件处理策略未配置，跳过邮件",
+            )
+            return
+
+        # 要处理的Sheet
+        sheet_name = choose_sheet_by_subject(subject)
+        if not sheet_name:
+            mail_context.skip_mail(
+                subject,
+                sender_email,
+                sent_time,
+                now,
+                "未找到对应的工作表名称，跳过邮件",
+            )
+            return
+
+        return subject, sender, sender_email, sent_time, sheet_name
 
 
 def create_mail_client():
