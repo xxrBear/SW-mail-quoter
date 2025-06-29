@@ -72,7 +72,10 @@ def reply_emails(sheet_name: str):
                 print(f"发送失败: {e}")
 
     mail_ids = [m.id for m in mails]
-    state.batch_update_mails_state(mail_ids)
+    try:
+        state.batch_update_mails_state(mail_ids)
+    except Exception as e:
+        print(f"更新数据库失败：{e}")
 
     print_banner("邮件发送成功")
 
