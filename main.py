@@ -52,9 +52,9 @@ def process_excel():
         app.quit()
 
 
-def reply_emails():
+def reply_emails(sheet_name: str):
     state = MailState()
-    mails = state.get_unprocessed_mails()
+    mails = state.get_unprocessed_mails(sheet_name)
 
     if not mails:
         return
@@ -71,10 +71,13 @@ def reply_emails():
             except Exception as e:
                 print(f"发送失败: {e}")
 
+    mail_ids = [m.id for m in mails]
+    state.batch_update_mails_state(mail_ids)
+
     print_banner("邮件发送成功")
 
 
 if __name__ == "__main__":
     # init_db()
     # process_excel()
-    reply_emails()
+    reply_emails("二元看涨")

@@ -1,5 +1,4 @@
 from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, datetime
 from typing import Dict, List
 
@@ -32,7 +31,6 @@ class MailHandler:
         mail_state = MailState()
         excel_handler = ExcelHandler()
 
-        pending_emails = []
         for eamil_addr, result_list in filter_dict.items():
             print_banner("开始处理可报价邮件......")
             processor = get_processor(eamil_addr)  # 获取每个客户对应的邮件处理策略
@@ -70,9 +68,6 @@ class MailHandler:
                     )
                     self.skip(mail, "非 AU 或 XAU 开头的标的合约，暂时跳过")
                     continue
-
-                # 待回复邮件内容
-                pending_emails.append(processed_mail)
 
                 # 写入数据库
                 try:

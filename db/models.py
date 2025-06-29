@@ -113,14 +113,21 @@ class MailState(Base):
                 for m in mails
             ]
 
-    def get_unprocessed_mails(self) -> Optional["MailState"]:
+    def get_unprocessed_mails(self, sheet_name: str) -> Optional["MailState"]:
         with session_scope() as session:
             mails = (
                 session.query(MailState)
                 .filter(
                     MailState.created_time >= date.today(),
                     MailState.state == MailStateEnum.UNPROCESSED,
+                    MailState.sheet_name == sheet_name,
                 )
                 .order_by(MailState.rev_time)
             )
             return mails
+
+    def batch_update_mails_state(self, mail_ids: list):
+        with session_scope() as session:
+            session.query(MailState).filter(MailState.id.in_(mail_ids)).update(
+                {"state": MailStateEnum.PROCESSED}, synchronize_session="fetch"
+            )
