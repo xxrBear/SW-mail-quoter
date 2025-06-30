@@ -26,16 +26,14 @@ def calc_next_letter(letter: str, count: int) -> str:
 
 
 def add_excel_subject_cell(wb: xw.Book, mail: EachMail, next_letter: str) -> None:
-    """在工作表中添加邮件主题字段"""
+    """在工作表中添加邮件标题字段"""
     sheet = wb.sheets[mail.sheet_name]
-    last_cell = sheet.range("A100").end("up")
+    value = "邮件标题"
+    row, _ = find_position_in_column(sheet, value, "A")
+    if not row:
+        return
 
-    if last_cell.value == "邮件标题":
-        next_row = last_cell.row
-    else:
-        next_row = last_cell.row + 1
-        sheet.range(f"A{next_row}").value = "邮件标题"
-    sheet.range(f"{next_letter}{next_row}").value = mail.subject
+    sheet.range(f"{next_letter}{row}").value = mail.subject
     wb.save()
 
 
