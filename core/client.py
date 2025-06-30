@@ -2,6 +2,7 @@ import email
 from email.header import decode_header
 import imaplib
 import os
+import re
 import smtplib
 from collections import defaultdict
 from datetime import date, datetime, timedelta
@@ -151,6 +152,27 @@ class EmailClient:
                     sent_time,
                     datetime.now(),
                     "无可用表格内容，跳过邮件",
+                )
+                continue
+
+            # 处理挂钩标的合约
+            underlying_asset = df_dict.get("挂钩标的合约")
+            if underlying_asset:
+                underlying_asset = (
+                    re.findall(r"[（(](.*?)[）)]", underlying_asset)[0]
+                    .replace(".", "")
+                    .upper()
+                )
+
+            if not (
+                underlying_asset.startswith("AU") or underlying_asset.startswith("XAU")
+            ):
+                mail_context.skip_mail(
+                    subject,
+                    sender_email,
+                    sent_time,
+                    datetime.now(),
+                    "非 AU 或 XAU 开头的标的合约，暂时跳过",
                 )
                 continue
 

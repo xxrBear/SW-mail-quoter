@@ -17,11 +17,6 @@ class ExcelHandler:
     Excel 公共规则处理类
     """
 
-    def delete_sheet_column(self, wb: xw.Book, sheet_name: str, sheet_copy_count: int):
-        sheet = wb.sheets[sheet_name]
-        sheet.api.Columns(sheet_copy_count + 3).Delete()
-        wb.save()
-
     def clear_sheet_columns(self, wb: xw.Book, sheet_name: str) -> None:
         """首次处理时，清空对应表格的列"""
         sheet = wb.sheets[sheet_name]

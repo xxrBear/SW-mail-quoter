@@ -35,7 +35,7 @@ class MailHandler:
             print_banner("开始处理可报价邮件......")
             processor = get_processor(eamil_addr)  # 获取每个客户对应的邮件处理策略
 
-            # 有可报价邮件，清空 Sheet 行
+            # 有可报价邮件，清空对应 Sheet C列后面的数据
             sheet_set = set([i.sheet_name for i in result_list if i.sheet_name])
             for _sheet_name in sheet_set:
                 excel_handler.clear_sheet_columns(wb, _sheet_name)
@@ -56,19 +56,6 @@ class MailHandler:
                 )
                 processed_mail = processor.process_mail_html(mail, quote_value)
 
-                if not (
-                    processed_mail.underlying.startswith("AU")
-                    or processed_mail.underlying.startswith("XAU")
-                ):
-                    print(
-                        f"非 AU 开头标的合约 {processed_mail.underlying}，暂时跳过 {processed_mail.subject} \n"
-                    )
-                    excel_handler.delete_sheet_column(
-                        wb, mail.sheet_name, sheet_name_count_dict[mail.sheet_name]
-                    )
-                    self.skip(mail, "非 AU 或 XAU 开头的标的合约，暂时跳过")
-                    continue
-
                 # 写入数据库
                 try:
                     mail_state.update_or_create_record(processed_mail)  # type: ignore
@@ -77,19 +64,19 @@ class MailHandler:
 
                 sheet_name_count_dict[mail.sheet_name] += 1
 
-        # 处理异常邮件，写入 Excel
+        # 写入当次报价异常邮件
         try:
             excel_handler.process_abnormal_mails_sheet(wb)
         except Exception as e:
             print(f"写入今日报价异常报错: {e}")
 
-        # 今日成功报价数据写入 Excel
+        # 写入今日成功报价数据
         try:
             excel_handler.process_successful_mails_sheet(wb)
         except Exception as e:
             print(f"写入今日成功报价报错：{e}")
 
-        # 处理 hold价
+        # 写入当次 hold价数据
         try:
             excel_handler.process_hold_mails_sheet(wb)
         except Exception as e:

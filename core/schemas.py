@@ -23,8 +23,7 @@ class EachMail:
     content: MailContent
     message: Message  # 原始邮件内容
     sent_time: datetime  # 邮件发送时间，格式为 "YYYY-MM-DD HH:MM:SS"
-    df_dict: dict  # 解析后的 DataFrame 字典类型数据
+    df_dict: dict
     soup: Optional[BeautifulSoup] = None  # BeautifulSoup 对象，解析后的邮件 HTML 内容
     sheet_name: Optional[str] = None
-
     underlying: Optional[str] = None
