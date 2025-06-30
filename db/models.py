@@ -118,7 +118,7 @@ class MailState(Base):
             mails = (
                 session.query(MailState)
                 .filter(
-                    MailState.created_time >= date.today(),
+                    MailState.rev_time >= date.today(),
                     MailState.state == MailStateEnum.UNPROCESSED,
                     MailState.sheet_name == sheet_name,
                 )

@@ -56,7 +56,7 @@ def reply_emails(sheet_name: str):
     state = MailState()
     mails = state.get_unprocessed_mails(sheet_name)
 
-    if not mails:
+    if not mails.count():
         return
 
     # 使用多线程发送邮件
