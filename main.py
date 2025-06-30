@@ -53,10 +53,10 @@ def process_excel():
         mail_handler = MailHandler()
         mail_handler.handle(wb)
 
-        print("所有邮件处理完成，保存并关闭 Excel 文件...")
     except:
         raise
     finally:
+        print("所有邮件处理完成，保存并关闭 Excel 文件...")
         wb.save()
         wb.close()
         app.quit()

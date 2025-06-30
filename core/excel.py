@@ -151,12 +151,14 @@ class ExcelHandler:
         wb.save()
 
     def process_successful_mails_sheet(self, wb: xw.Book):
+        """数据库查询出今日成功报价的数据，写入Excel"""
         sheet = self.ensure_sheet_exists(wb, "今日成功报价")
         self.clear_sheet_content(sheet)
         self.write_today_successful_mails(sheet)
         wb.save()
 
     def process_hold_mails_sheet(self, wb: xw.Book):
+        """当次运行的hold邮件写入Excel"""
         sheet = self.ensure_sheet_exists(wb, "hold价邮件")
         self.clear_sheet_content(sheet)
         self.write_hold_mails(sheet)
@@ -164,6 +166,7 @@ class ExcelHandler:
 
     @classmethod
     def get_confirmed_mail_subject(cls, sheet: xw.Sheet):
+        """查询确认报价的邮件主题"""
         value = "是否可以回复报价邮件（是/否）"
         row, _ = find_position_in_column(sheet, value, "A")
         if not row:
