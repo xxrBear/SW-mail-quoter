@@ -4,7 +4,7 @@ from typing import Dict, List
 
 import xlwings as xw
 
-from core.client import mail_client, send_mail_client
+from core.client import mail_client
 from core.context import mail_context
 from core.excel import ExcelHandler
 from core.schemas import EachMail

@@ -28,10 +28,12 @@ def init_db():
         print_init_db("数据库表初始化完成......")
 
 
-def open_excel_with_filepath(filepath):
+def open_excel_with_filepath():
     """
     启动 Excel 应用并打开指定文件，失败时自动关闭 Excel
     """
+    filepath = os.getenv("EXCEL_FILE_PATH")
+
     app = xw.App(visible=False, add_book=False)
     try:
         wb = app.books.open(filepath)
@@ -44,10 +46,7 @@ def open_excel_with_filepath(filepath):
 def process_excel():
     """处理 Excel"""
 
-    filepath = os.getenv("EXCEL_FILE_PATH")
-    wb, app = open_excel_with_filepath(filepath)
-    if not wb or not app:
-        raise RuntimeError(f"无法打开当前 Excel {filepath}")
+    wb, app = open_excel_with_filepath()
 
     # 处理邮件并回复
     try:
@@ -66,10 +65,7 @@ def process_excel():
 def reply_emails(sheet_name: str):
     """回复邮件"""
 
-    filepath = os.getenv("EXCEL_FILE_PATH")
-    wb, app = open_excel_with_filepath(filepath)
-    if not wb or not app:
-        raise RuntimeError(f"无法打开当前 Excel {filepath}")
+    wb, app = open_excel_with_filepath()
 
     try:
         state = MailState()
