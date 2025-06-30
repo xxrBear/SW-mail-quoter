@@ -3,7 +3,12 @@ from datetime import datetime
 import xlwings as xw
 
 from core.context import mail_context
-from core.utils import calc_next_letter, print_banner
+from core.utils import (
+    calc_next_letter,
+    col_index_to_letter,
+    find_position_in_column,
+    print_banner,
+)
 from db.models import MailState
 
 
@@ -161,3 +166,20 @@ class ExcelHandler:
         self.clear_sheet_content(sheet)
         self.write_hold_mails(sheet)
         wb.save()
+
+    @classmethod
+    def get_confirmed_mail_subject(cls, sheet: xw.Sheet):
+        value = "是否可以回复报价邮件（是/否）"
+        row, _ = find_position_in_column(sheet, value, "A")
+        if not row:
+            return
+
+        cell_range = sheet.range(f"C{row}:Z{row}")
+        subjects = []
+        for cell in cell_range:
+            if str(cell.value).strip() == "是":
+                col = col_index_to_letter(cell.column)
+                target = f"{col}{row + 1}"
+                print(target)
+                subjects.append(sheet.range(target).value)
+        return subjects

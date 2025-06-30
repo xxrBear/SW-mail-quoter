@@ -1,3 +1,4 @@
+import os
 import pickle
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date
@@ -5,6 +6,7 @@ from datetime import date
 import xlwings as xw
 
 from core.client import send_mail_client
+from core.excel import ExcelHandler
 from core.handler import MailHandler
 from core.utils import print_banner, print_init_db
 from db.models import MailState
@@ -26,17 +28,26 @@ def init_db():
         print_init_db("数据库表初始化完成......")
 
 
+def open_excel_with_filepath(filepath):
+    """
+    启动 Excel 应用并打开指定文件，失败时自动关闭 Excel
+    """
+    app = xw.App(visible=False, add_book=False)
+    try:
+        wb = app.books.open(filepath)
+        return wb, app
+    except Exception as e:
+        print(f"无法打开当前 Excel {filepath}")
+        raise e
+
+
 def process_excel():
     """处理 Excel"""
 
-    # 启动 Excel 应用
-    app = xw.App(visible=False, add_book=False)
-    try:
-        wb = app.books.open(r"./奇异期权.xlsm")
-    except Exception as e:
-        print("打开 Excel 文件失败:", e)
-        app.quit()
-        return
+    filepath = os.getenv("EXCEL_FILE_PATH")
+    wb, app = open_excel_with_filepath(filepath)
+    if not wb or not app:
+        raise RuntimeError(f"无法打开当前 Excel {filepath}")
 
     # 处理邮件并回复
     try:
@@ -53,31 +64,45 @@ def process_excel():
 
 
 def reply_emails(sheet_name: str):
-    state = MailState()
-    mails = state.get_unprocessed_mails(sheet_name)
+    """回复邮件"""
 
-    if not mails.count():
-        return
+    filepath = os.getenv("EXCEL_FILE_PATH")
+    wb, app = open_excel_with_filepath(filepath)
+    if not wb or not app:
+        raise RuntimeError(f"无法打开当前 Excel {filepath}")
 
-    # 使用多线程发送邮件
-    with ThreadPoolExecutor(max_workers=10) as executor:
-        futures = [
-            executor.submit(send_mail_client.reply_mail, pickle.loads(p.mail_raw))
-            for p in mails
-        ]
-        for f in as_completed(futures):
-            try:
-                f.result()
-            except Exception as e:
-                print(f"发送失败: {e}")
-
-    mail_ids = [m.id for m in mails]
     try:
-        state.batch_update_mails_state(mail_ids)
-    except Exception as e:
-        print(f"更新数据库失败：{e}")
+        state = MailState()
+        sheet = wb.sheets[sheet_name]
+        mail_subjects = ExcelHandler.get_confirmed_mail_subject(sheet)
+        mails = state.get_unprocessed_mails(sheet_name, mail_subjects)
 
-    print_banner("邮件发送成功")
+        if not mails.count():
+            return
+
+        # 使用多线程发送邮件
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            futures = [
+                executor.submit(send_mail_client.reply_mail, pickle.loads(p.mail_raw))
+                for p in mails
+            ]
+            for f in as_completed(futures):
+                try:
+                    f.result()
+                except Exception as e:
+                    print(f"发送失败: {e}")
+
+        # 更新已处理邮件状态
+        mail_ids = [m.id for m in mails]
+        try:
+            state.batch_update_mails_state(mail_ids)
+        except Exception as e:
+            print(f"更新数据库失败：{e}")
+    finally:
+        print_banner("邮件发送成功")
+        wb.save()
+        wb.close()
+        app.quit()
 
 
 if __name__ == "__main__":

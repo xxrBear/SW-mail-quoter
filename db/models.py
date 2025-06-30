@@ -81,7 +81,6 @@ class MailState(Base):
                     mail_raw=pickle.dumps(mail),
                 )
                 session.add(mail_obj)
-            session.commit()
 
     def mail_exists(self, mail: EachMail) -> bool:
         """检查邮件是否已存在"""
@@ -113,7 +112,9 @@ class MailState(Base):
                 for m in mails
             ]
 
-    def get_unprocessed_mails(self, sheet_name: str) -> Optional["MailState"]:
+    def get_unprocessed_mails(
+        self, sheet_name: str, mail_subjects: list
+    ) -> Optional["MailState"]:
         with session_scope() as session:
             mails = (
                 session.query(MailState)
@@ -121,6 +122,7 @@ class MailState(Base):
                     MailState.rev_time >= date.today(),
                     MailState.state == MailStateEnum.UNPROCESSED,
                     MailState.sheet_name == sheet_name,
+                    MailState.subject.in_(mail_subjects),
                 )
                 .order_by(MailState.rev_time)
             )

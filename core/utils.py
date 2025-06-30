@@ -39,6 +39,28 @@ def add_excel_subject_cell(wb: xw.Book, mail: EachMail, next_letter: str) -> Non
     wb.save()
 
 
+def find_position_in_column(sheet, keyword, col_index):
+    """
+    在指定工作表的某一列中查找包含 keyword 的单元格，返回其 (行号, 列号)
+    """
+    _100_row = 100  # 只处理一百行
+    for row_index in range(1, _100_row + 1):
+        cell = sheet.cells(row_index, col_index)
+        value = cell.value
+        if value is not None and str(value).strip() == str(keyword).strip():
+            return row_index, col_index
+    return None, None
+
+
+def col_index_to_letter(n):
+    """将列号（从 1 开始）转换为 Excel 列字母"""
+    result = ""
+    while n > 0:
+        n, remainder = divmod(n - 1, 26)
+        result = chr(65 + remainder) + result
+    return result
+
+
 def get_rate(underlying: str, value: float, wb: xw.Book) -> str:
     """
     根据输入值，返回对应区间的利率（百分比）
