@@ -28,26 +28,28 @@ def init_db():
         print_init_db("数据库表初始化完成......")
 
 
-def open_excel_with_filepath():
+def open_excel_with_filename():
     """
     启动 Excel 应用并打开指定文件，失败时自动关闭 Excel
     """
-    filepath = os.getenv("EXCEL_FILE_PATH")
+    filename = os.getenv("EXCEL_FILENAME")
+    wb, app = selected_excel_if_open(filename)
+
+    if wb and app:
+        return wb, app, False
 
     app = xw.App(visible=False, add_book=False)
     try:
-        wb = app.books.open(filepath)
-        return wb, app
+        wb = app.books.open(filename)
+        return wb, app, True
     except Exception as e:
-        print(f"无法打开当前 Excel {filepath}")
+        print(f"无法打开当前 Excel {filename}")
         raise e
 
 
 def process_excel():
     """处理 Excel"""
-    wb, app = selected_excel_if_open("奇异期权.xlsm")
-    if not wb and not app:
-        wb, app = open_excel_with_filepath()
+    wb, app, run_in_background = open_excel_with_filename()
 
     # 处理邮件并回复
     try:
@@ -58,16 +60,17 @@ def process_excel():
         raise
     finally:
         print("所有邮件处理完成，保存并关闭 Excel 文件...")
-        wb.save()
-        wb.close()
-        app.quit()
+        if not run_in_background:
+            wb.save()
+        else:
+            wb.save()
+            wb.close()
+            app.quit()
 
 
 def reply_emails(sheet_name: str):
     """回复邮件"""
-    wb, app = selected_excel_if_open("奇异期权.xlsm")
-    if not wb and not app:
-        wb, app = open_excel_with_filepath()
+    wb, app, run_in_background = open_excel_with_filename()
 
     try:
         state = MailState()
@@ -98,12 +101,15 @@ def reply_emails(sheet_name: str):
             print(f"更新数据库失败：{e}")
     finally:
         print_banner("邮件发送成功")
-        wb.save()
-        wb.close()
-        app.quit()
+        if not run_in_background:
+            wb.save()
+        else:
+            wb.save()
+            wb.close()
+            app.quit()
 
 
 if __name__ == "__main__":
     # init_db()
-    # process_excel()
-    reply_emails("二元看涨")
+    process_excel()
+    # reply_emails("二元看涨")
