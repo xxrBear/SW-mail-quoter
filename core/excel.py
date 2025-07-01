@@ -177,7 +177,7 @@ class ExcelHandler:
         for cell in cell_range:
             if str(cell.value).strip() == "是":
                 col = col_index_to_letter(cell.column)
-                target = f"{col}{row + 1}"
-                print(target)
+                target = f"{col}{row - 1}"
+                # print(target)
                 subjects.append(sheet.range(target).value)
         return subjects

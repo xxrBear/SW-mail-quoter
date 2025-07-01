@@ -28,7 +28,6 @@ class MailHandler:
         filter_dict = self.filter_unquotable_result_dict(result_dict)
 
         # 处理未报价邮件并回复
-        mail_state = MailState()
         excel_handler = ExcelHandler()
 
         for eamil_addr, result_list in filter_dict.items():
@@ -58,7 +57,7 @@ class MailHandler:
 
                 # 写入数据库
                 try:
-                    mail_state.update_or_create_record(processed_mail)  # type: ignore
+                    MailState().update_or_create_record(processed_mail)  # type: ignore
                 except Exception as e:
                     print(f"写入数据库出错: {e}")
 
@@ -88,8 +87,6 @@ class MailHandler:
         """过滤不可报价的邮件，并由上下文对象记录"""
         filtered_dict = defaultdict(list)
 
-        mail_state = MailState()  # 数据库表
-
         for email_addr, mails in result_dict.items():
             processor = get_processor(email_addr)
 
@@ -103,7 +100,7 @@ class MailHandler:
                     self.skip(mail, "当前邮件不满足报价条件，跳过邮件")
                     continue
 
-                if mail_state.mail_exists(mail):
+                if MailState().mail_exists(mail):
                     continue
 
                 filtered_dict[email_addr].append(mail)

@@ -8,7 +8,7 @@ import xlwings as xw
 from core.client import send_mail_client
 from core.excel import ExcelHandler
 from core.handler import MailHandler
-from core.utils import print_banner, print_init_db
+from core.utils import print_banner, print_init_db, selected_excel_if_open
 from db.models import MailState
 
 
@@ -45,8 +45,9 @@ def open_excel_with_filepath():
 
 def process_excel():
     """处理 Excel"""
-
-    wb, app = open_excel_with_filepath()
+    wb, app = selected_excel_if_open("奇异期权.xlsm")
+    if not wb and not app:
+        wb, app = open_excel_with_filepath()
 
     # 处理邮件并回复
     try:
@@ -64,8 +65,9 @@ def process_excel():
 
 def reply_emails(sheet_name: str):
     """回复邮件"""
-
-    wb, app = open_excel_with_filepath()
+    wb, app = selected_excel_if_open("奇异期权.xlsm")
+    if not wb and not app:
+        wb, app = open_excel_with_filepath()
 
     try:
         state = MailState()
@@ -86,7 +88,7 @@ def reply_emails(sheet_name: str):
                 try:
                     f.result()
                 except Exception as e:
-                    print(f"发送失败: {e}")
+                    print(f"邮件发送失败: {e}")
 
         # 更新已处理邮件状态
         mail_ids = [m.id for m in mails]

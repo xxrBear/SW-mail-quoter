@@ -106,7 +106,7 @@ class CustomerCBGProcessor(ProcessorStrategy):
 
         :param df_dict: 邮件中提取的表格数据（字典格式）
         :param sheet_name: 表格名称，用于获取需报价字段
-        :return: True 表示已报价，False 表示未报价
+        :return: True 表示满足，False 表示不满足
         """
         # 判断是否所有值都非空
         all_fields_filled = all(mail.df_dict.values())

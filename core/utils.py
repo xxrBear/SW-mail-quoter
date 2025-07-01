@@ -1,3 +1,5 @@
+import os
+
 import xlwings as xw
 
 from core.schemas import EachMail
@@ -88,3 +90,24 @@ def get_risk_free_rate(underlying: str) -> str:
     else:
         r = "4.5%"
     return r
+
+
+def selected_excel_if_open(filename):
+    """如果待处理Excel已经打开，直接使用"""
+    selected = False
+    selected_book = ""
+    selected_app = ""
+
+    for app in xw.apps:
+        for book in list(app.books):
+            book_name = os.path.basename(book.fullname) if book.fullname else book.name
+            if book_name.lower() == filename.lower():
+                selected_book = book
+                selected_app = app
+
+                selected = True
+                break
+        if selected:
+            break
+
+    return selected_book, selected_app
