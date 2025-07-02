@@ -19,7 +19,7 @@ dev = [
 ]
 
 [project.scripts]
-sw-quoter = "cli:cli"
+quoter = "cli:cli"
 
 [build-system]
 requires = ["setuptools>=64", "wheel"]
@@ -27,4 +27,4 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 packages = ["core", "db", "processor"]
-py-modules = ["cli"]
+py-modules = ["cli", 'main']
