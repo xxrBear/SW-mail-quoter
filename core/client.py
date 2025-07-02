@@ -224,6 +224,7 @@ class EmailClient:
 
         reply_mime["Subject"] = f"Re: {original_msg['Subject']}"
         # reply_mime["CC"] = gen_cc(original_msg, [self.address])
+        reply_mime["CC"] = os.getenv("CC")
 
         # 构建回复邮件体
         reply_body = MIMEMultipart("related")
