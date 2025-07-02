@@ -60,31 +60,38 @@ def reply_emails(sheet_name: str):
         state = MailState()
         sheet = wb.sheets[sheet_name]
         mail_subjects = ExcelHandler.get_confirmed_mail_subject(sheet)
-        mails = state.get_unprocessed_mails(sheet_name, mail_subjects)
+        if not mail_subjects:
+            return
 
+        mails = state.get_unprocessed_mails(sheet_name, mail_subjects)
         if not mails.count():
             return
 
+        successful_ids = []
         # 使用多线程发送邮件
         with ThreadPoolExecutor(max_workers=10) as executor:
-            futures = [
-                executor.submit(send_mail_client.reply_mail, pickle.loads(p.mail_raw))
-                for p in mails
-            ]
-            for f in as_completed(futures):
+            future_map = {
+                executor.submit(
+                    send_mail_client.reply_mail, pickle.loads(m.mail_raw)
+                ): m.id
+                for m in mails
+            }
+            for f in as_completed(future_map):
+                mail_id = future_map[f]
                 try:
                     f.result()
+                    successful_ids.append(mail_id)
                 except Exception as e:
                     print(f"邮件发送失败: {e}")
 
         # 更新已处理邮件状态
-        mail_ids = [m.id for m in mails]
-        try:
-            state.batch_update_mails_state(mail_ids)
-        except Exception as e:
-            print(f"更新数据库失败：{e}")
-    finally:
+        if successful_ids:
+            try:
+                state.batch_update_mails_state(successful_ids)
+            except Exception as e:
+                print(f"更新数据库失败：{e}")
         print_banner("邮件发送成功")
+    finally:
         if not run_in_background:
             wb.save()
         else:
@@ -95,5 +102,5 @@ def reply_emails(sheet_name: str):
 
 if __name__ == "__main__":
     # init_db()
-    process_excel()
-    # reply_emails("二元看涨")
+    # process_excel()
+    reply_emails("二元看涨")

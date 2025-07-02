@@ -167,7 +167,7 @@ class ExcelHandler:
     @classmethod
     def get_confirmed_mail_subject(cls, sheet: xw.Sheet):
         """查询确认报价的邮件主题"""
-        value = "是否可以回复报价邮件（是/否）"
+        value = "是否可以回复报价邮件（是/否/[空]忽略）"
         row, _ = find_position_in_column(sheet, value, "A")
         if not row:
             return

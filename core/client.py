@@ -1,5 +1,4 @@
 import email
-from email.header import decode_header
 import imaplib
 import os
 import re
@@ -16,7 +15,6 @@ from bs4 import BeautifulSoup
 
 from core.context import mail_context
 from core.parser import (
-    gen_cc,
     parse_from_info,
     parse_html_to_dict,
     parse_mail_sent_time,
@@ -220,11 +218,11 @@ class EmailClient:
         # 构建邮件头
         reply_mime["From"] = self.address
         # reply_mime["To"] = original_msg["From"]
-        reply_mime["To"] = "zhaochenxing@swhysc.com"
+        reply_mime["To"] = "17855370672@163.com"
 
         reply_mime["Subject"] = f"Re: {original_msg['Subject']}"
         # reply_mime["CC"] = gen_cc(original_msg, [self.address])
-        reply_mime["CC"] = os.getenv("CC")
+        # reply_mime["CC"] = os.getenv("CC")
 
         # 构建回复邮件体
         reply_body = MIMEMultipart("related")
