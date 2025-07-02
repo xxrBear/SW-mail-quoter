@@ -1,5 +1,5 @@
 import pickle
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from typing import Optional
 
 from sqlalchemy import DateTime, Enum, LargeBinary, String, func
@@ -133,3 +133,18 @@ class MailState(Base):
             session.query(MailState).filter(MailState.id.in_(mail_ids)).update(
                 {"state": MailStateEnum.PROCESSED}, synchronize_session="fetch"
             )
+
+    def delete_records_older_than_days(self, days: int):
+        """
+        删除数据表中早于指定天数的记录
+
+        :param days: 删除多少天前的数据（大于该天数的记录会被保留）
+        :return: 删除的记录条数
+        """
+        with session_scope() as session:
+            query = session.query(MailState).filter(
+                MailState.created_time <= datetime.now() - timedelta(days=days)
+            )
+            count = query.count()
+            query.delete()
+        return count

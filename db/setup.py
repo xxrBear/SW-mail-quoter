@@ -2,7 +2,7 @@ from sqlalchemy import inspect
 
 from core.utils import print_banner, print_init_db
 from db.engine import engine
-from db.models import Base
+from db.models import Base, MailState
 
 
 def init_db():
@@ -21,3 +21,8 @@ def drop_db():
     """删除数据库所有表"""
 
     Base.metadata.drop_all(bind=engine)
+
+
+def delete_row(days: int):
+    """删除指定天数前的表数据"""
+    return MailState().delete_records_older_than_days(days)
