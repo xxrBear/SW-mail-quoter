@@ -220,7 +220,7 @@ class EmailClient:
         # 构建邮件头
         reply_mime["From"] = self.address
         # reply_mime["To"] = original_msg["From"]
-        reply_mime["To"] = "17855370672@163.com"
+        reply_mime["To"] = "zhaochenxing@swhysc.com"
 
         reply_mime["Subject"] = f"Re: {original_msg['Subject']}"
         # reply_mime["CC"] = gen_cc(original_msg, [self.address])

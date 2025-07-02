@@ -8,24 +8,8 @@ import xlwings as xw
 from core.client import send_mail_client
 from core.excel import ExcelHandler
 from core.handler import MailHandler
-from core.utils import print_banner, print_init_db, selected_excel_if_open
+from core.utils import print_banner, selected_excel_if_open
 from db.models import MailState
-
-
-def init_db():
-    """初始化数据库和表结构表"""
-    from sqlalchemy import inspect
-
-    from db.engine import engine
-    from db.models import Base
-
-    inspector = inspect(engine)
-
-    if inspector.has_table("mail_state"):
-        print_banner("申万宏源处理脚本")
-    else:
-        Base.metadata.create_all(bind=engine)
-        print_init_db("数据库表初始化完成......")
 
 
 def open_excel_with_filename():
