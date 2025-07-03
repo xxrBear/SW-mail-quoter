@@ -75,6 +75,12 @@ class MailHandler:
         except Exception as e:
             print(f"写入hold价失败：{e}")
 
+        # 写入今日成功报价数据
+        try:
+            ExcelHandler().process_successful_mails_sheet(wb)
+        except Exception as e:
+            print(f"写入今日成功报价报错：{e}")
+
     def filter_unquotable_result_dict(
         self, result_dict: Dict[str, List[EachMail]]
     ) -> Dict[str, List[EachMail]]:
