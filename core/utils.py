@@ -2,6 +2,7 @@ import os
 
 import xlwings as xw
 
+from core.parser import get_mail_hash
 from core.schemas import EachMail
 
 
@@ -28,14 +29,19 @@ def calc_next_letter(letter: str, count: int) -> str:
 
 
 def add_excel_subject_cell(wb: xw.Book, mail: EachMail, next_letter: str) -> None:
-    """在工作表中添加邮件标题字段"""
+    """在工作表中添加邮件标题和哈希值"""
     sheet = wb.sheets[mail.sheet_name]
-    value = "邮件标题"
-    row, _ = find_position_in_column(sheet, value, "A")
+    target = "邮件标题"
+    row, _ = find_position_in_column(sheet, target, "A")
     if not row:
         return
 
     sheet.range(f"{next_letter}{row}").value = mail.subject
+
+    hash_target = "邮件标记"
+    row, _ = find_position_in_column(sheet, hash_target, "A")
+    sheet.range(f"{next_letter}{row}").value = get_mail_hash(mail)
+
     sheet.range(f"{next_letter}:{next_letter}").autofit()  # 宽度自适应
 
     wb.save()

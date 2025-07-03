@@ -67,7 +67,7 @@ class CustomerCBGProcessor(ProcessorStrategy):
             finally_target = next_letter + str(sheet_mapping_handler.quote_line)
             quote_value = sheet.range(finally_target).value
 
-            # 每个表格底部添加邮件主题
+            # 每个表格底部添加邮件标题和哈希值
             add_excel_subject_cell(wb, mail, next_letter)
 
         except Exception as e:

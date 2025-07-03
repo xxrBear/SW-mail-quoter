@@ -10,6 +10,7 @@ from core.utils import (
     print_banner,
 )
 from db.models import MailState
+from processor.mapping import get_sheet_handler
 
 
 class ExcelHandler:
@@ -165,18 +166,25 @@ class ExcelHandler:
         wb.save()
 
     @classmethod
-    def get_confirmed_mail_subject(cls, sheet: xw.Sheet):
-        """查询确认报价的邮件主题"""
+    def get_confirmed_mail_hash_and_price(cls, sheet: xw.Sheet):
+        """查询确认报价的邮件哈希值和报价值"""
         value = "是否可以回复报价邮件（是/否/[空]忽略）"
         row, _ = find_position_in_column(sheet, value, "A")
         if not row:
             return
 
+        handler = get_sheet_handler(sheet_name=sheet.name)
+        quote_line = handler.quote_line
+
         cell_range = sheet.range(f"C{row}:Z{row}")
-        subjects = []
+        _dict = {}
         for cell in cell_range:
             if str(cell.value).strip() == "是":
                 col = col_index_to_letter(cell.column)
                 target = f"{col}{row - 1}"
-                subjects.append(sheet.range(target).value)
-        return subjects
+                _dict[sheet.range(target).value] = sheet.range(
+                    f"{col}{quote_line}"
+                ).value
+
+        print(_dict)
+        return _dict

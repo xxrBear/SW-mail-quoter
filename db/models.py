@@ -1,8 +1,8 @@
 import pickle
-from datetime import date, timedelta, datetime
+from datetime import date, datetime, timedelta
 from typing import Optional
 
-from sqlalchemy import DateTime, Enum, LargeBinary, String, func
+from sqlalchemy import DateTime, Enum, LargeBinary, String, delete, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from core.parser import get_mail_hash
@@ -113,7 +113,7 @@ class MailState(Base):
             ]
 
     def get_unprocessed_mails(
-        self, sheet_name: str, mail_subjects: list
+        self, sheet_name: str, mail_hash_list: list
     ) -> Optional["MailState"]:
         with session_scope() as session:
             mails = (
@@ -122,7 +122,7 @@ class MailState(Base):
                     # MailState.rev_time >= date.today(),
                     MailState.state == MailStateEnum.UNPROCESSED,
                     MailState.sheet_name == sheet_name,
-                    MailState.subject.in_(mail_subjects),
+                    MailState.mail_hash.in_(mail_hash_list),
                 )
                 .order_by(MailState.rev_time)
             )
@@ -148,3 +148,10 @@ class MailState(Base):
             count = query.count()
             query.delete()
         return count
+
+    def clear_table(self) -> int:
+        """删除数据表中所有的记录"""
+        with session_scope() as session:
+            total = session.query(MailState).count()
+            session.query(MailState).delete()
+            return total

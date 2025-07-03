@@ -26,3 +26,8 @@ def drop_db():
 def delete_row(days: int):
     """删除指定天数前的表数据"""
     return MailState().delete_records_older_than_days(days)
+
+
+def clear_table():
+    """删除表中所有数据"""
+    return MailState().clear_table()

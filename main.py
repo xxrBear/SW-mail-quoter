@@ -10,6 +10,7 @@ from core.excel import ExcelHandler
 from core.handler import MailHandler
 from core.utils import print_banner, selected_excel_if_open
 from db.models import MailState
+from processor.registry import get_processor
 
 
 def open_excel_with_filename():
@@ -59,22 +60,29 @@ def reply_emails(sheet_name: str):
     try:
         state = MailState()
         sheet = wb.sheets[sheet_name]
-        mail_subjects = ExcelHandler.get_confirmed_mail_subject(sheet)
-        if not mail_subjects:
+        mail_hash_dict = ExcelHandler.get_confirmed_mail_hash_and_price(sheet)
+
+        if not mail_hash_dict:
             return
 
-        mails = state.get_unprocessed_mails(sheet_name, mail_subjects)
+        mails = state.get_unprocessed_mails(sheet_name, mail_hash_dict.keys())
         if not mails.count():
             return
+
+        # 再次修改邮件的报价值，因为可能人为修改
+        send_dict = {}
+        for m in mails:
+            processor = get_processor(m.from_addr)
+            mail_raw = pickle.loads(m.mail_raw)
+            processor.process_mail_html(mail_raw, mail_hash_dict.get(m.mail_hash))
+            send_dict[m.id] = mail_raw
 
         successful_ids = []
         # 使用多线程发送邮件
         with ThreadPoolExecutor(max_workers=10) as executor:
             future_map = {
-                executor.submit(
-                    send_mail_client.reply_mail, pickle.loads(m.mail_raw)
-                ): m.id
-                for m in mails
+                executor.submit(send_mail_client.reply_mail, raw): id
+                for id, raw in send_dict.items()
             }
             for f in as_completed(future_map):
                 mail_id = future_map[f]
