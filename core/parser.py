@@ -60,8 +60,6 @@ def parse_html_to_dict(html: str) -> Optional[dict]:
                 if key:  # 丢掉 key 为 "" 的行
                     result[key] = value if value else None
 
-        # print(f"BeautifulSoup 解析的结果：{result}")
-
         return result
     except Exception as e:
         print(f"解析失败: {e}")
@@ -150,7 +148,6 @@ def parse_from_info(msg: Message) -> Tuple[str, str]:
     # 去除多余符号
     name = name.replace('"', "").strip() if name else ""
     addr = addr.replace("<", "").replace(">", "").strip()
-    # print(f"发送人: 姓名：{name} 邮箱：<{addr}>")
 
     return name, addr
 

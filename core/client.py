@@ -264,7 +264,6 @@ class EmailClient:
 
         # 解码标题
         subject = parse_subject(header_msg)
-        # print(subject)
 
         # 筛选邮件
         if "衍生品交易" not in subject:
@@ -272,7 +271,6 @@ class EmailClient:
 
         # 发件人和发件人邮箱
         sender, sender_email = parse_from_info(header_msg)
-        # print(from_name, from_addr)
 
         # 发送时间
         now = datetime.now()

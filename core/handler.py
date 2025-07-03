@@ -42,7 +42,7 @@ class MailHandler:
             sheet_name_count_dict = {_sheet_name: 0 for _sheet_name in sheet_set}
 
             for mail in result_list:
-                print(f"处理邮件: {mail.subject} 来自: {eamil_addr}")
+                print(f"处理邮件: {mail.subject} 来自: 【{eamil_addr}】")
 
                 # 处理 Excel 对应 Sheet
                 excel_handler.copy_sheet_columns(

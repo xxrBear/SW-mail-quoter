@@ -26,7 +26,7 @@ class AbnormalMailContext:
                 "created_time": created_time,
             }
         )
-        print(f"{reason}: {subject} 来自：{sent_addr}")
+        print(f"{reason}: {subject} 来自：【{sent_addr}】")
 
     def skip_hold_email(
         self, subject: str, sent_addr: str, sent_time: datetime, reason: str = ""
