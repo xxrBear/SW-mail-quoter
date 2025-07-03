@@ -69,12 +69,6 @@ class MailHandler:
         except Exception as e:
             print(f"写入今日报价异常报错: {e}")
 
-        # 写入今日成功报价数据
-        try:
-            excel_handler.process_successful_mails_sheet(wb)
-        except Exception as e:
-            print(f"写入今日成功报价报错：{e}")
-
         # 写入当次 hold价数据
         try:
             excel_handler.process_hold_mails_sheet(wb)

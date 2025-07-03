@@ -36,6 +36,8 @@ def add_excel_subject_cell(wb: xw.Book, mail: EachMail, next_letter: str) -> Non
         return
 
     sheet.range(f"{next_letter}{row}").value = mail.subject
+    sheet.range(f"{next_letter}:{next_letter}").autofit()  # 宽度自适应
+
     wb.save()
 
 

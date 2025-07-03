@@ -90,6 +90,13 @@ def reply_emails(sheet_name: str):
                 state.batch_update_mails_state(successful_ids)
             except Exception as e:
                 print(f"更新数据库失败：{e}")
+
+        # 写入今日成功报价数据
+        try:
+            ExcelHandler().process_successful_mails_sheet(wb)
+        except Exception as e:
+            print(f"写入今日成功报价报错：{e}")
+
         print_banner("邮件发送成功")
     finally:
         if not run_in_background:

@@ -14,7 +14,7 @@ from db.models import MailState
 
 class ExcelHandler:
     """
-    Excel 公共规则处理类
+    Excel 公共样式处理类
     """
 
     def clear_sheet_columns(self, wb: xw.Book, sheet_name: str) -> None:
