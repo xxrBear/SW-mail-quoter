@@ -9,8 +9,9 @@ from core.context import mail_context
 from core.excel import ExcelHandler
 from core.schemas import EachMail
 from core.utils import print_banner
+from db.enums import MailStateEnum
 from db.models import MailState
-from processor.registry import get_processor
+from processor.registry import get_processor, subject_sheet_map
 
 
 class MailHandler:
@@ -30,19 +31,18 @@ class MailHandler:
         # 处理未报价邮件并回复
         excel_handler = ExcelHandler()
 
-        for eamil_addr, result_list in filter_dict.items():
+        for email_addr, result_list in filter_dict.items():
             print_banner("开始处理可报价邮件......")
-            processor = get_processor(eamil_addr)  # 获取每个客户对应的邮件处理策略
+            processor = get_processor(email_addr)  # 获取每个客户对应的邮件处理策略
 
-            # 有可报价邮件，清空对应 Sheet C列后面的数据
-            sheet_set = set([i.sheet_name for i in result_list if i.sheet_name])
-            for _sheet_name in sheet_set:
+            # 清空Sheet
+            sheet_names = subject_sheet_map.keys()
+            for _sheet_name in sheet_names:
                 excel_handler.clear_sheet_columns(wb, _sheet_name)
 
-            sheet_name_count_dict = {_sheet_name: 0 for _sheet_name in sheet_set}
-
+            sheet_name_count_dict = {_sheet_name: 0 for _sheet_name in sheet_names}
             for mail in result_list:
-                print(f"处理邮件: {mail.subject} 来自: 【{eamil_addr}】")
+                print(f"处理邮件: {mail.subject} 来自: 【{email_addr}】")
 
                 # 处理 Excel 对应 Sheet
                 excel_handler.copy_sheet_columns(
@@ -57,7 +57,7 @@ class MailHandler:
 
                 # 写入数据库
                 try:
-                    MailState().update_or_create_record(processed_mail)  # type: ignore
+                    MailState().create_record(processed_mail)  # type: ignore
                 except Exception as e:
                     print(f"写入数据库出错: {e}")
 
@@ -94,8 +94,10 @@ class MailHandler:
                     self.skip(mail, "当前邮件不满足报价条件，跳过邮件")
                     continue
 
-                if MailState().mail_exists(mail):
-                    continue
+                db_mail = MailState().mail_exists(mail)
+                if db_mail is not None:
+                    if db_mail.state != MailStateEnum.UNPROCESSED:
+                        continue
 
                 filtered_dict[email_addr].append(mail)
 

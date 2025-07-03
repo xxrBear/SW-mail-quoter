@@ -186,5 +186,39 @@ class ExcelHandler:
                     f"{col}{quote_line}"
                 ).value
 
-        print(_dict)
         return _dict
+
+    @classmethod
+    def get_draft_mail_hash(cls, sheet: xw.Sheet):
+        value = "是否可以回复报价邮件（是/否/[空]忽略）"
+        row, _ = find_position_in_column(sheet, value, "A")
+        if not row:
+            return
+
+        cell_range = sheet.range(f"C{row}:Z{row}")
+        hash_list = []
+        for cell in cell_range:
+            if not str(cell.value).strip():
+                col = col_index_to_letter(cell.column)
+                target = f"{col}{row - 1}"
+                hash_list.append(sheet.range(f"{col}{target}").value)
+
+        return hash_list
+
+    @classmethod
+    def get_reject_mail_hash(cls, sheet: xw.Sheet):
+        value = "是否可以回复报价邮件（是/否/[空]忽略）"
+        row, _ = find_position_in_column(sheet, value, "A")
+        if not row:
+            return
+
+        cell_range = sheet.range(f"C{row}:Z{row}")
+        hash_list = []
+        for cell in cell_range:
+            if str(cell.value).strip() == "否":
+                col = col_index_to_letter(cell.column)
+                target = f"{col}{row - 1}"
+                hash_list.append(sheet.range(target).value)
+
+        # print(_dict)
+        return hash_list

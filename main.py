@@ -62,35 +62,33 @@ def reply_emails(sheet_name: str):
         sheet = wb.sheets[sheet_name]
         mail_hash_dict = ExcelHandler.get_confirmed_mail_hash_and_price(sheet)
 
-        if not mail_hash_dict:
-            return
-
         mails = state.get_unprocessed_mails(sheet_name, mail_hash_dict.keys())
-        if not mails.count():
-            return
 
         # 再次修改邮件的报价值，因为可能人为修改
         send_dict = {}
+        confirmed_hash_list = []
         for m in mails:
             processor = get_processor(m.from_addr)
             mail_raw = pickle.loads(m.mail_raw)
             processor.process_mail_html(mail_raw, mail_hash_dict.get(m.mail_hash))
             send_dict[m.id] = mail_raw
+            confirmed_hash_list.append(m.mail_hash)
 
         successful_ids = []
         # 使用多线程发送邮件
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            future_map = {
-                executor.submit(send_mail_client.reply_mail, raw): id
-                for id, raw in send_dict.items()
-            }
-            for f in as_completed(future_map):
-                mail_id = future_map[f]
-                try:
-                    f.result()
-                    successful_ids.append(mail_id)
-                except Exception as e:
-                    print(f"邮件发送失败: {e}")
+        if send_dict:
+            with ThreadPoolExecutor(max_workers=10) as executor:
+                future_map = {
+                    executor.submit(send_mail_client.reply_mail, raw): id
+                    for id, raw in send_dict.items()
+                }
+                for f in as_completed(future_map):
+                    mail_id = future_map[f]
+                    try:
+                        f.result()
+                        successful_ids.append(mail_id)
+                    except Exception as e:
+                        print(f"邮件发送失败: {e}")
 
         # 更新已处理邮件状态
         if successful_ids:
@@ -105,6 +103,11 @@ def reply_emails(sheet_name: str):
         except Exception as e:
             print(f"写入今日成功报价报错：{e}")
 
+        # 写入被业务人员拒绝的数据
+        reject_hash_list = ExcelHandler.get_reject_mail_hash(sheet)
+        if reject_hash_list:
+            MailState().update_state_by_hash_mail(reject_hash_list)
+
         print_banner("邮件发送成功")
     finally:
         if not run_in_background:
@@ -118,4 +121,4 @@ def reply_emails(sheet_name: str):
 if __name__ == "__main__":
     # init_db()
     # process_excel()
-    reply_emails("二元看涨")
+    reply_emails("看涨阶梯")

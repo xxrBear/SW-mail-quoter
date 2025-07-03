@@ -2,7 +2,7 @@ import pickle
 from datetime import date, datetime, timedelta
 from typing import Optional
 
-from sqlalchemy import DateTime, Enum, LargeBinary, String, delete, func
+from sqlalchemy import DateTime, Enum, LargeBinary, String, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from core.parser import get_mail_hash
@@ -57,20 +57,18 @@ class MailState(Base):
 
     mail_raw: Mapped[bytes] = mapped_column(LargeBinary, comment="邮件内容")
 
-    def update_or_create_record(self, mail: EachMail) -> None:
+    def create_record(self, mail: EachMail) -> None:
         """将处理结果更新或写入数据库"""
         mail_hash = get_mail_hash(mail)
 
         with session_scope() as session:
             mail_obj = (
                 session.query(MailState)
-                .filter_by(mail_hash=mail_hash, state=MailStateEnum.MANUAL)
+                .filter(MailState.mail_hash == mail_hash)
                 .one_or_none()
             )
 
-            if mail_obj:
-                mail_obj.state = MailStateEnum.PROCESSED
-            else:
+            if not mail_obj:
                 mail_obj = MailState(
                     mail_hash=mail_hash,
                     sheet_name=mail.sheet_name,
@@ -82,14 +80,12 @@ class MailState(Base):
                 )
                 session.add(mail_obj)
 
-    def mail_exists(self, mail: EachMail) -> bool:
+    def mail_exists(self, mail: EachMail) -> "MailState":
         """检查邮件是否已存在"""
         mail_hash = get_mail_hash(mail)
         with session_scope() as session:
-            c = (
-                session.query(MailState).filter_by(mail_hash=mail_hash).first()
-                is not None
-            )
+            session.expire_on_commit = False
+            c = session.query(MailState).filter_by(mail_hash=mail_hash).first()
             return c
 
     def get_successful_mail_info(self) -> list:
@@ -132,6 +128,14 @@ class MailState(Base):
         with session_scope() as session:
             session.query(MailState).filter(MailState.id.in_(mail_ids)).update(
                 {"state": MailStateEnum.PROCESSED}, synchronize_session="fetch"
+            )
+
+    def update_state_by_hash_mail(
+        self, mail_hash: list, state: MailStateEnum = MailStateEnum.MANUAL
+    ):
+        with session_scope() as session:
+            session.query(MailState).filter(MailState.mail_hash.in_(mail_hash)).update(
+                {"state": state}, synchronize_session="fetch"
             )
 
     def delete_records_older_than_days(self, days: int):
