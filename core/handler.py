@@ -31,14 +31,14 @@ class MailHandler:
         # 处理未报价邮件并回复
         excel_handler = ExcelHandler()
 
+        # 清空Sheet
+        sheet_names = subject_sheet_map.keys()
+        for _sheet_name in sheet_names:
+            excel_handler.clear_sheet_columns(wb, _sheet_name)
+
         for email_addr, result_list in filter_dict.items():
             print_banner("开始处理可报价邮件......")
             processor = get_processor(email_addr)  # 获取每个客户对应的邮件处理策略
-
-            # 清空Sheet
-            sheet_names = subject_sheet_map.keys()
-            for _sheet_name in sheet_names:
-                excel_handler.clear_sheet_columns(wb, _sheet_name)
 
             sheet_name_count_dict = {_sheet_name: 0 for _sheet_name in sheet_names}
             for mail in result_list:
