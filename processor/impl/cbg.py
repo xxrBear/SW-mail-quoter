@@ -48,12 +48,11 @@ class CustomerCBGProcessor(ProcessorStrategy):
 
             # 交易日
             trade_date_index = sheet.range(next_letter + other_dict.get("交易日"))
-            trade_date = trade_date_index.value
             trade_date_formula = trade_date_index.formula
-
             if str(underlying).startswith("AU"):
                 trade_date_formula = trade_date_formula.replace("$C", "$A")
                 trade_date_index.formula = trade_date_formula
+            trade_date = trade_date_index.value
 
             # Vol
             rate = get_rate(underlying, trade_date, wb)
