@@ -1,6 +1,11 @@
+
+
 # 申万宏源证券 - Excel 处理与报价邮件回复
 
-> ⚠️ **注意：本工具仅支持 Windows 操作系统**
+![Static Badge](https://img.shields.io/badge/build-python3.8%2B-blue?style=flat&logo=python)
+![Static Badge](https://img.shields.io/badge/Excel2013%2B-%231E8449?style=flat&logo=excel)
+
+> **注意：本工具仅支持 Windows 操作系统**
 
 
 ## 🚀 快速开始
