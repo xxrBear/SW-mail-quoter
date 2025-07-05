@@ -24,6 +24,12 @@ pip install -r requirements.txt -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web
 uv sync
 ```
 
+如果你没有安装，可以使用以下脚本
+
+```bash
+scripts\install_uv.bat
+```
+
 **开发者工具（可选）**
 
 
