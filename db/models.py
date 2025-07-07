@@ -1,5 +1,5 @@
 import pickle
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
 from sqlalchemy import DateTime, Enum, LargeBinary, String, func
@@ -21,7 +21,8 @@ class MailState(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
 
     created_time: Mapped[DateTime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
+        DateTime(timezone=True),
+        default=datetime.now(timezone(timedelta(hours=8))),
     )
 
     rev_time: Mapped[DateTime] = mapped_column(
@@ -98,15 +99,7 @@ class MailState(Base):
                 )
                 .order_by(MailState.rev_time)
             )
-            return [
-                [
-                    m.subject,
-                    m.from_addr,
-                    m.rev_time,
-                    m.created_time + timedelta(hours=8),
-                ]
-                for m in mails
-            ]
+            return [[m.subject, m.from_addr, m.rev_time, m.created_time] for m in mails]
 
     def get_unprocessed_mails(
         self, sheet_name: str, mail_hash_list: list
