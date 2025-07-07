@@ -113,13 +113,18 @@ class MailHandler:
             mail.subject, mail.from_addr, mail.sent_time, datetime.now(), reason
         )
 
-    def pull_mails_to_db(self, since_date: date = date.today()):
-        # 读取邮件并获取结果字典
-        result_dict = mail_client.read_mail(folder=self.folder, since_date=since_date)
+    # ---------------------------------------------------------------------------------
+    # CLI 指定方法
+    # ---------------------------------------------------------------------------------
 
-        # 过滤不可报价结果字典
+    def pull_quote_mails_to_db(self, since_date: date = date.today()):
+        """获取报价邮件数据，存入数据库表中"""
+
+        result_dict = mail_client.read_mail(folder=self.folder, since_date=since_date)
         filter_dict = self.filter_unquotable_result_dict(result_dict)
 
-        for from_addr, result_list in filter_dict.items():
+        for _, result_list in filter_dict.items():
             for each_mail in result_list:
                 MailState().create_record(each_mail)
+
+    # def get_quote_mails_to_db(self):

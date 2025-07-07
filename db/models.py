@@ -1,8 +1,9 @@
+import json
 import pickle
 from datetime import date, datetime, timedelta, timezone
-from typing import Optional
+from typing import List, Optional
 
-from sqlalchemy import DateTime, Enum, LargeBinary, String, func
+from sqlalchemy import JSON, DateTime, Enum, LargeBinary, String, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from core.parser import get_mail_hash
@@ -58,6 +59,10 @@ class MailState(Base):
 
     mail_raw: Mapped[bytes] = mapped_column(LargeBinary, comment="邮件内容")
 
+    df_dict: Mapped[dict] = mapped_column(JSON, nullable=False, comment="邮件表格内容")
+
+    soup: Mapped[str] = mapped_column(String(512), nullable=False, comment="邮件soup")
+
     def create_record(self, mail: EachMail) -> None:
         """将处理结果更新或写入数据库"""
         mail_hash = get_mail_hash(mail)
@@ -78,6 +83,8 @@ class MailState(Base):
                     rev_time=mail.sent_time,
                     underlying=mail.underlying,
                     mail_raw=pickle.dumps(mail),
+                    df_dict=json.dumps(mail.df_dict),
+                    soup=str(mail.soup),
                 )
                 session.add(mail_obj)
 
@@ -131,6 +138,9 @@ class MailState(Base):
                 {"state": state}, synchronize_session="fetch"
             )
 
+    # ------------------------------------------------------------------------------------------
+    # CLI 专用
+    # ------------------------------------------------------------------------------------------
     def delete_records_older_than_days(self, days: int):
         """
         删除数据表中早于指定天数的记录
@@ -152,3 +162,19 @@ class MailState(Base):
             total = session.query(MailState).count()
             session.query(MailState).delete()
             return total
+
+    def get_today_unprocessed_mails(self) -> List["MailState"]:
+        with session_scope() as session:
+            session.expire_on_commit = False
+            today = date.today()
+            start_time = datetime.combine(today, datetime.min.time())
+            mails = (
+                session.query(MailState)
+                .filter(
+                    MailState.created_time >= start_time,
+                    MailState.state == MailStateEnum.UNPROCESSED,
+                )
+                .order_by(MailState.rev_time)
+                .all()
+            )
+            return mails

@@ -121,6 +121,9 @@ class CustomerCBGProcessor(ProcessorStrategy):
 
     def iter_label_rows(self, soup: BeautifulSoup):
         """返回需要处理的标签行"""
+        if isinstance(soup, str):
+            soup = BeautifulSoup(soup, "html.parser")
+
         for row in soup.select("table tr"):
             tds = row.find_all("td", recursive=False)
             if len(tds) == 2:
