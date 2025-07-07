@@ -16,6 +16,7 @@ from imapclient.imap_utf7 import encode as encode_folder_name
 
 from core.context import mail_context
 from core.parser import (
+    gen_cc,
     parse_from_info,
     parse_html_to_dict,
     parse_mail_sent_time,
@@ -23,7 +24,7 @@ from core.parser import (
     parse_subject,
 )
 from core.schemas import EachMail
-from processor.registry import choose_sheet_by_subject
+from processor.registry import choose_sheet_by_subject, get_cc_map
 
 
 class EmailClient:
@@ -224,8 +225,12 @@ class EmailClient:
         reply_mime["To"] = "17855370672@163.com"
 
         reply_mime["Subject"] = f"Re: {original_msg['Subject']}"
-        # reply_mime["CC"] = gen_cc(original_msg, [self.address])
-        # reply_mime["CC"] = os.getenv("CC")
+
+        self_cc = gen_cc(original_msg, [self.address])
+        customer_cc = get_cc_map(self.address)
+        all_cc = ",".join([self_cc, customer_cc])
+        print(all_cc)
+        # reply_mime["CC"] = ",".join([self_cc, customer_cc])
 
         # 构建回复邮件体
         reply_body = MIMEMultipart("related")

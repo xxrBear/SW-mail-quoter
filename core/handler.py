@@ -126,5 +126,3 @@ class MailHandler:
         for _, result_list in filter_dict.items():
             for each_mail in result_list:
                 MailState().create_record(each_mail)
-
-    # def get_quote_mails_to_db(self):

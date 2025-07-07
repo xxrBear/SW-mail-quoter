@@ -9,6 +9,19 @@ processor_map: Dict[str, Type[ProcessorStrategy]] = {
     "cgbchina.com.cn": CustomerCBGProcessor,  # 广发银行
 }
 
+# 客户对应邮件抄送人
+cc_map: Dict[str, str] = {
+    "cgbchina.com.cn": "liunaiwei@swhysc.com,otc_sales_sh1@swhysc.com",
+    "swhysc.com": "17855370672@163.com,zhaochengxin@swhysc.com",
+}
+
+
+def get_cc_map(email: str) -> Optional[str]:
+    email_suffix = email.split("@")[-1]
+    cc = cc_map.get(email_suffix)
+    return cc
+
+
 T = TypeVar("T", bound=ProcessorStrategy)
 
 

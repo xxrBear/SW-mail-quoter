@@ -193,6 +193,7 @@ def gen_cc(msg: Message, except_addresses: List[str]) -> str:
 
     # 处理 CC 地址
     cc_addrs = msg.get("CC")
-    cc.extend(filter_addresses(cc_addrs or "", except_addresses))
+    _, addr = parseaddr(cc_addrs)
+    cc.append(addr)
 
     return ",".join(cc)
