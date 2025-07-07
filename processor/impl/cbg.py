@@ -41,25 +41,21 @@ class CustomerCBGProcessor(ProcessorStrategy):
 
             # 处理 Excel 中的数据
             other_dict = sheet_mapping_handler.other_dict
-            # 标的合约
-            underlying_index = sheet.range(next_letter + other_dict.get("标的合约"))
-            underlying = underlying_index.value
-            mail.underlying = underlying
 
             # 交易日
             trade_date_index = sheet.range(next_letter + other_dict.get("交易日"))
             trade_date_formula = trade_date_index.formula
-            if str(underlying).startswith("AU"):
+            if str(mail.underlying).startswith("AU"):
                 trade_date_formula = trade_date_formula.replace("$C", "$A")
                 trade_date_index.formula = trade_date_formula
             trade_date = trade_date_index.value
 
             # Vol
-            rate = get_rate(underlying, trade_date, wb)
+            rate = get_rate(mail.underlying, trade_date, wb)
             sheet.range(next_letter + other_dict.get("VOL")).value = rate
 
             # 无风险利率
-            r = get_risk_free_rate(underlying)
+            r = get_risk_free_rate(mail.underlying)
             sheet.range(next_letter + other_dict.get("无风险利率")).value = r
 
             # 获取需报价字段所在位置并写入

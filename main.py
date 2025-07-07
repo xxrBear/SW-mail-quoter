@@ -63,6 +63,8 @@ def reply_emails(sheet_name: str):
         mail_hash_dict = ExcelHandler.get_confirmed_mail_hash_and_price(sheet)
 
         mails = state.get_unprocessed_mails(sheet_name, mail_hash_dict.keys())
+        if not mails:
+            return
 
         # 再次修改邮件的报价值，因为可能人为修改
         send_dict = {}

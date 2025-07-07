@@ -81,7 +81,7 @@ class MailState(Base):
                 )
                 session.add(mail_obj)
 
-    def mail_exists(self, mail: EachMail) -> "MailState":
+    def mail_exists(self, mail: EachMail) -> Optional["MailState"]:
         """检查邮件是否已存在"""
         mail_hash = get_mail_hash(mail)
         with session_scope() as session:
@@ -115,7 +115,7 @@ class MailState(Base):
                 )
                 .order_by(MailState.rev_time)
             )
-            return mails
+            return mails.first()
 
     def batch_update_mails_state(self, mail_ids: list):
         with session_scope() as session:

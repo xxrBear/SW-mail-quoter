@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from email.message import Message
-from typing import List, Optional, Union
+from typing import List, Literal, Optional, Union
 
 from bs4 import BeautifulSoup
 
@@ -25,5 +25,5 @@ class EachMail:
     sent_time: datetime  # 邮件发送时间，格式为 "YYYY-MM-DD HH:MM:SS"
     df_dict: dict
     soup: Optional[BeautifulSoup] = None  # BeautifulSoup 对象，解析后的邮件 HTML 内容
-    sheet_name: Optional[str] = None
-    underlying: Optional[str] = None
+    sheet_name: Literal["二元看涨", "看涨阶梯"] = "二元看涨"
+    underlying: str = "标的合约"
