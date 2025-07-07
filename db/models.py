@@ -115,7 +115,7 @@ class MailState(Base):
                 )
                 .order_by(MailState.rev_time)
             )
-            return mails.first()
+            return mails
 
     def batch_update_mails_state(self, mail_ids: list):
         with session_scope() as session:

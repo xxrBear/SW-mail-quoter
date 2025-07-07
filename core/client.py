@@ -90,7 +90,7 @@ class EmailClient:
         """
         mail_client = self.connect(protocol="imap")
 
-        encoded_folder = encode_folder_name(folder)  # 编码为 IMAP 支持格式
+        encoded_folder = encode_folder_name("银行询价")  # 编码为 IMAP 支持格式
         mail_client.select(encoded_folder)  # type: ignore # 选择收件箱
 
         result_dict = defaultdict(list)
