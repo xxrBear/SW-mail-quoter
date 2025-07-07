@@ -3,6 +3,7 @@ import click
 from commands.db import cli_db
 from commands.reply import cli_reply_emails
 from commands.proc import cli_process_excel
+from commands.mail import cli_mail
 
 
 @click.group()
@@ -14,6 +15,7 @@ def cli():
 cli.add_command(cli_db)
 cli.add_command(cli_reply_emails)
 cli.add_command(cli_process_excel)
+cli.add_command(cli_mail)
 
 
 if __name__ == "__main__":

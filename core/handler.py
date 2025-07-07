@@ -101,9 +101,8 @@ class MailHandler:
                     continue
 
                 db_mail = MailState().mail_exists(mail)
-                if db_mail is not None:
-                    if db_mail.state != MailStateEnum.UNPROCESSED:
-                        continue
+                if db_mail and db_mail.state != MailStateEnum.UNPROCESSED:
+                    continue
 
                 filtered_dict[email_addr].append(mail)
 
@@ -113,3 +112,14 @@ class MailHandler:
         mail_context.skip_mail(
             mail.subject, mail.from_addr, mail.sent_time, datetime.now(), reason
         )
+
+    def pull_mails_to_db(self, since_date: date = date.today()):
+        # 读取邮件并获取结果字典
+        result_dict = mail_client.read_mail(folder=self.folder, since_date=since_date)
+
+        # 过滤不可报价结果字典
+        filter_dict = self.filter_unquotable_result_dict(result_dict)
+
+        for from_addr, result_list in filter_dict.items():
+            for each_mail in result_list:
+                MailState().create_record(each_mail)

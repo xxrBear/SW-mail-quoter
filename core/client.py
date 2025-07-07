@@ -4,7 +4,7 @@ import os
 import re
 import smtplib
 from collections import defaultdict
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from email.mime.message import MIMEMessage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -190,6 +190,7 @@ class EmailClient:
                     soup=soup,
                     sheet_name=sheet_name,
                     sent_time=sent_time,
+                    underlying=underlying_asset,
                 )
             )
 
