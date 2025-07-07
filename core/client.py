@@ -4,7 +4,7 @@ import os
 import re
 import smtplib
 from collections import defaultdict
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from email.mime.message import MIMEMessage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -12,6 +12,7 @@ from email.utils import make_msgid
 from typing import Dict, List, Optional, Union
 
 from bs4 import BeautifulSoup
+from imapclient.imap_utf7 import encode as encode_folder_name
 
 from core.context import mail_context
 from core.parser import (
@@ -78,7 +79,7 @@ class EmailClient:
 
     def read_mail(
         self,
-        folder: str = "INBOX",
+        folder: str = "银行询价",
         since_date: date = date.today(),
     ) -> Dict[str, List[EachMail]]:
         """读取所有邮件，并整理成字典
@@ -89,23 +90,24 @@ class EmailClient:
         """
         mail_client = self.connect(protocol="imap")
 
-        mail_client.select(folder)  # type: ignore # 选择收件箱
+        encoded_folder = encode_folder_name(folder)  # 编码为 IMAP 支持格式
+        mail_client.select(encoded_folder)  # type: ignore # 选择收件箱
 
         result_dict = defaultdict(list)
 
-        # 根据条件搜索邮件（可选条件：ALL、UNSEEN、SUBJECT "关键字"）
-        my_date = date(2025, 6, 25)
-        status, messages = mail_client.search(  # type: ignore
-            None,
-            "SINCE",
-            my_date.strftime("%d-%b-%Y"),
-            "BEFORE",
-            (my_date + timedelta(days=1)).strftime("%d-%b-%Y"),
-        )
-
+        # # 根据条件搜索邮件（可选条件：ALL、UNSEEN、SUBJECT "关键字"）
+        # my_date = date(2025, 6, 25)
         # status, messages = mail_client.search(  # type: ignore
-        #     None, "Since", since_date.strftime("%d-%b-%Y")
+        #     None,
+        #     "SINCE",
+        #     my_date.strftime("%d-%b-%Y"),
+        #     "BEFORE",
+        #     (my_date + timedelta(days=1)).strftime("%d-%b-%Y"),
         # )
+
+        status, messages = mail_client.search(  # type: ignore
+            None, "Since", since_date.strftime("%d-%b-%Y")
+        )
         if status != "OK":
             print("未找到邮件")
             return result_dict
