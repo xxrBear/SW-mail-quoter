@@ -73,10 +73,7 @@ def cli_proc_mail():
             )
 
             # 获取报价值，并写入待发送邮件内容中
-            quote_value = processor.process_excel(
-                mail, wb, sheet_name_count_dict[mail.sheet_name]
-            )
-            processor.process_mail_html(mail, quote_value)
+            processor.process_excel(mail, wb, sheet_name_count_dict[mail.sheet_name])
 
             sheet_name_count_dict[mail.sheet_name] += 1
 

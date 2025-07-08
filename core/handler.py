@@ -50,14 +50,13 @@ class MailHandler:
                 )
 
                 # 获取报价值，并写入待发送邮件内容中
-                quote_value = processor.process_excel(
+                processor.process_excel(
                     mail, wb, sheet_name_count_dict[mail.sheet_name]
                 )
-                processed_mail = processor.process_mail_html(mail, quote_value)
 
                 # 写入数据库
                 try:
-                    MailState().create_record(processed_mail)  # type: ignore
+                    MailState().create_record(mail)  # type: ignore
                 except Exception as e:
                     print(f"写入数据库出错: {e}")
 
