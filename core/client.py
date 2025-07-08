@@ -4,12 +4,12 @@ import os
 import re
 import smtplib
 from collections import defaultdict
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from email.mime.message import MIMEMessage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import make_msgid
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Union
 
 from bs4 import BeautifulSoup
 from imapclient.imap_utf7 import encode as encode_folder_name
@@ -30,9 +30,9 @@ from processor.registry import choose_sheet_by_subject, get_cc_map
 class EmailClient:
     def __init__(
         self,
-        server: Optional[str],
-        address: Optional[str],
-        password: Optional[str],
+        server: str,
+        address: str,
+        password: str,
         imap_port: int = 993,
         smtp_port: int = 465,
     ) -> None:
