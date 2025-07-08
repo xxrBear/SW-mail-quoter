@@ -31,3 +31,27 @@ def delete_row(days: int):
 def clear_table():
     """删除表中所有数据"""
     return MailState().clear_table()
+
+
+def show_db():
+    """展示当天的报价数据"""
+    mails = MailState().get_db_info()
+
+    doc1 = "\n\t".join([str(m) for m in mails if m.sheet_name == "二元看涨"])
+
+    doc2 = "\n\t".join([str(m) for m in mails if m.sheet_name == "看涨阶梯"])
+
+    doc = f"""
+今日报价信息汇总
+    
+    处理成功：{len([m for m in mails if m.state == "UNPROCESSED"])} 条
+    未处理：  {len([m for m in mails if m.state == "MAUNAL"])} 条
+    手动处理：{len([m for m in mails if m.state == "PROCESSED"])} 条
+    
+    二元看涨报价邮件：
+\t{doc1}
+    
+    看涨阶梯报价邮件：
+\t{doc2}
+    """
+    return doc

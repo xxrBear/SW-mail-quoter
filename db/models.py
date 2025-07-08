@@ -63,6 +63,9 @@ class MailState(Base):
 
     soup: Mapped[str] = mapped_column(String(512), nullable=False, comment="邮件soup")
 
+    def __repr__(self) -> str:
+        return f"ID: {self.id:>3} 标题：{self.subject} 来自：<{self.from_addr}> 处理状态：{self.state.value}"
+
     def create_record(self, mail: EachMail) -> None:
         """将处理结果更新或写入数据库"""
         mail_hash = get_mail_hash(mail)
@@ -175,6 +178,20 @@ class MailState(Base):
                     MailState.state == MailStateEnum.UNPROCESSED,
                 )
                 .order_by(MailState.rev_time)
+                .all()
+            )
+            return mails
+
+    def get_db_info(self):
+        with session_scope() as session:
+            today = date.today()
+            session.expire_on_commit = False
+
+            today = date.today()
+            start_time = datetime.combine(today, datetime.min.time())
+            mails = (
+                session.query(MailState)
+                .filter(MailState.created_time >= start_time)
                 .all()
             )
             return mails
