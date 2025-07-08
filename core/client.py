@@ -209,7 +209,7 @@ class EmailClient:
 
         self._send_reply_mail(reply_mime)
 
-    def _build_reply_mime(self, last_email: EachMail) -> MIMEMultipart:
+    def _build_reply_mime(self, last_email) -> MIMEMultipart:
         """构建回复邮件的 MIMEMultipart 对象"""
 
         original_msg = last_email.message
@@ -226,11 +226,11 @@ class EmailClient:
 
         reply_mime["Subject"] = f"Re: {original_msg['Subject']}"
 
+        _, addr = parse_from_info(original_msg)
         self_cc = gen_cc(original_msg, [self.address])
-        customer_cc = get_cc_map(self.address)
+        customer_cc = get_cc_map(addr)
         all_cc = ",".join([self_cc, customer_cc])
-        print(all_cc)
-        # reply_mime["CC"] = ",".join([self_cc, customer_cc])
+        # reply_mime["CC"] = all_cc
 
         # 构建回复邮件体
         reply_body = MIMEMultipart("related")
