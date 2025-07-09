@@ -33,7 +33,13 @@ class CBGBullLadderHandler(BaseHandler):
 
     @property
     def other_dict(self) -> dict:
-        return {"交易日": "14", "VOL": "12", "标的合约": "3", "无风险利率": "17"}
+        return {
+            "交易日": "14",
+            "VOL": "12",
+            "标的合约": "3",
+            "无风险利率": "17",
+            "T": "16",
+        }
 
 
 class CBGBinarryCallHandler(BaseHandler):
@@ -55,7 +61,13 @@ class CBGBinarryCallHandler(BaseHandler):
 
     @property
     def other_dict(self) -> dict:
-        return {"交易日": "13", "VOL": "11", "标的合约": "3", "无风险利率": "16"}
+        return {
+            "交易日": "13",
+            "VOL": "11",
+            "标的合约": "3",
+            "无风险利率": "16",
+            "T": "15",
+        }
 
 
 CBG_SHEET_HANDLER = {

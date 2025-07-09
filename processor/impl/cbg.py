@@ -48,17 +48,18 @@ class CustomerCBGProcessor(ProcessorStrategy):
             if str(mail.underlying).startswith("AU"):
                 trade_date_formula = trade_date_formula.replace("$C", "$A")
                 trade_date_index.formula = trade_date_formula
-            trade_date = trade_date_index.value
 
-            # Vol
-            rate = get_rate(mail.underlying, trade_date, wb)
+            T_ = sheet.range(next_letter + other_dict.get("T")).value
+
+            # VOL
+            rate = get_rate(mail.underlying, T_, wb)
             sheet.range(next_letter + other_dict.get("VOL")).value = rate
 
             # 无风险利率
             r = get_risk_free_rate(mail.underlying)
             sheet.range(next_letter + other_dict.get("无风险利率")).value = r
 
-            # 获取需报价字段所在位置并写入
+            # 获取需报价字段所在位置并读取
             finally_target = next_letter + str(sheet_mapping_handler.quote_line)
             quote_value = sheet.range(finally_target).value
 
