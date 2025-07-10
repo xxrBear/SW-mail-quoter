@@ -1,6 +1,6 @@
 import click
 
-from db.setup import clear_table, delete_row, drop_db, init_db, show_db
+from db.setup import clear_table, delete_row, drop_db, init_db, reset_row, show_db
 
 
 @click.group(name="db")
@@ -54,3 +54,15 @@ def delete(days):
     else:
         count = delete_row(days)
         click.secho(f"已删除{days}天前的数据共{count}条", fg="green")
+
+
+@cli_db.command("reset")
+@click.argument("_id", type=click.IntRange(1, None))
+def reset(_id):
+    """重置指定ID的数据库状态"""
+    confirm = click.confirm(f"确定要重置ID为 {_id} 的数据")
+    if not confirm:
+        click.secho("操作取消", fg="yellow")
+    else:
+        reset_row(_id)
+        click.secho("重置成功", fg="green")

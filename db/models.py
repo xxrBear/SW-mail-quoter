@@ -195,3 +195,9 @@ class MailState(Base):
                 .all()
             )
             return mails
+
+    def reset_state_by_id(self, _id):
+        with session_scope() as session:
+            obj = session.get(MailState, _id)
+            if obj:
+                obj.state = MailStateEnum.UNPROCESSED

@@ -55,3 +55,8 @@ def show_db():
 \t{doc2}
     """
     return doc
+
+
+def reset_row(_id: int):
+    """通过 id 重置记录状态"""
+    MailState().reset_state_by_id(_id)
